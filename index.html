@@ -2128,6 +2128,7 @@
     const GOOGLE_SHEET_PROVIDER = "google-sheet";
     const CLOUD_PROVIDER_STORAGE_KEY = "studentRegistrationCloudProvider";
     const DEFAULT_SUPABASE_URL = "https://ckfysmueguiyunjdffqn.supabase.co";
+    const DEFAULT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrZnlzbXVlZ3VpeXVuamRmZnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NTI0MTIsImV4cCI6MjA5NTAyODQxMn0.Ud7El5jqk6GyTqIe24wk4AwQscIFeLiU2PgjWID7gBE";
     const SUPABASE_URL_STORAGE_KEY = "studentRegistrationSupabaseUrl";
     const SUPABASE_ANON_KEY_STORAGE_KEY = "studentRegistrationSupabaseAnonKey";
     const DEFAULT_GOOGLE_SCRIPT_URL = "";
@@ -2594,7 +2595,7 @@
     // ===================== CLOUD STORAGE =====================
     function normalizeSupabaseUrl(url) { return String(url || "").trim().replace(/\/+$/, ""); }
     function getSupabaseUrl() { return normalizeSupabaseUrl(localStorage.getItem(SUPABASE_URL_STORAGE_KEY) || DEFAULT_SUPABASE_URL); }
-    function getSupabaseAnonKey() { return String(localStorage.getItem(SUPABASE_ANON_KEY_STORAGE_KEY) || "").trim(); }
+    function getSupabaseAnonKey() { return String(localStorage.getItem(SUPABASE_ANON_KEY_STORAGE_KEY) || DEFAULT_SUPABASE_ANON_KEY).trim(); }
     function hasSupabaseConfig() { return Boolean(getSupabaseUrl() && getSupabaseAnonKey()); }
     function getGoogleScriptUrl() { return localStorage.getItem(GOOGLE_SCRIPT_STORAGE_KEY) || DEFAULT_GOOGLE_SCRIPT_URL; }
     function hasGoogleScriptUrl() { return Boolean(getGoogleScriptUrl()); }
