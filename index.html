@@ -3081,16 +3081,26 @@
         currentProvince:["ខេត្ត/ក្រុង (បច្ចុប្បន្ន)","ខេត្តរាជធានីបច្ចុប្បន្ន","អាសយដ្ឋានបច្ចុប្បន្ន - ខេត្ត/ក្រុង","currentProvince"],
         address:["អាសយដ្ឋាន","address"],
         fromSchool:["សាលា","មកពីសាលា","fromSchool","school"],
-        className:["ថ្នាក់","className","class","grade"],
+        className:["ថ្នាក់","ថ្នាក់រៀន","ថ្នាក់ទី","កម្រិតថ្នាក់","កំរិតថ្នាក់","ក្រុមថ្នាក់","className","class name","class","grade","grade level","level"],
         gpa:["មធ្យមភាគ","gpa","score"],
         contact:["ទំនាក់ទំនង","លេខទូរស័ព្ទ","ទូរស័ព្ទ","contact","phone","phone number"]
     };
 
     function normHeader(v) { return String(v||"").replace(/^\uFEFF/,"").trim().toLocaleLowerCase("km-KH").replace(/[()\s/_.,:។-]/g,""); }
+    function isClassHeader(header) {
+        const normalized = normHeader(header);
+        const keywords = ["ថ្នាក់", "class", "grade", "level"].map(normHeader);
+        return keywords.some(k => k && normalized.includes(k));
+    }
     function readImportVal(row, field) {
         const m = new Map(Object.entries(row).map(([k,v])=>[normHeader(k),v]));
         for (const alias of (importAliases[field]||[field]).map(normHeader)) {
             if (m.has(alias)) return m.get(alias);
+        }
+        if (field === "className") {
+            for (const [key, value] of m.entries()) {
+                if (isClassHeader(key)) return value;
+            }
         }
         return "";
     }
@@ -3105,6 +3115,7 @@
         for (const [field, aliases] of Object.entries(importAliases)) {
             if ([field, ...aliases].map(normHeader).includes(normalized)) return field;
         }
+        if (isClassHeader(normalized)) return "className";
         return positional;
     }
     function headerMatchScore(row) {
