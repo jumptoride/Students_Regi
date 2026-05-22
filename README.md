@@ -2,6 +2,21 @@
 
 Static GitHub Pages build for the student registration app.
 
+## Google Sheet sync
+
+Use `google-sheet-backend.gs` as the Apps Script backend:
+
+1. Create a Google Sheet.
+2. Open Extensions -> Apps Script.
+3. Paste the contents of `google-sheet-backend.gs` into `Code.gs`.
+4. Save, then Deploy -> New deployment.
+5. Choose type `Web app`.
+6. Execute as: `Me`.
+7. Who has access: `Anyone`.
+8. Copy the Web App URL ending in `/exec`.
+9. Open the app, click `Sheet`, paste the URL, and Save.
+10. On the computer, click `Backup` after import. On the phone, click `Load` or reopen the app.
+
 ## GitHub Pages setup
 
 1. Create a GitHub repository.

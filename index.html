@@ -1134,6 +1134,10 @@
                     <ion-icon name="grid-outline" aria-hidden="true"></ion-icon>
                     <span>Sheet</span>
                 </button>
+                <button id="load-sheet-btn" class="btn btn-ghost" type="button" title="Load from Google Sheet">
+                    <ion-icon name="cloud-download-outline" aria-hidden="true"></ion-icon>
+                    <span>Load</span>
+                </button>
                 <button id="backup-now-btn" class="btn btn-ghost" type="button" title="Backup to Google Sheet">
                     <ion-icon name="cloud-done-outline" aria-hidden="true"></ion-icon>
                     <span>Backup</span>
@@ -1585,7 +1589,7 @@
             </div>
             <h2 id="sheet-title" class="modal-title">ភ្ជាប់ Google Sheet</h2>
             <p class="modal-desc">
-                បញ្ចូល Apps Script Web App URL ដើម្បី sync ទិន្នន័យ add/update/delete/backup ទៅ Google Sheet។
+                បញ្ចូល Apps Script Web App URL ដើម្បីឱ្យ computer និង phone ប្រើទិន្នន័យក្នុង Google Sheet តែមួយ។
             </p>
             <div class="field" style="margin-top:16px">
                 <label for="sheet-url-input">Apps Script Web App URL</label>
@@ -1626,7 +1630,7 @@
 <script type="module">
     const LOCAL_STUDENTS_KEY = "studentRegistrationOfflineStudents";
     const LOCAL_HISTORY_KEY  = "studentRegistrationOfflineHistory";
-    const DEFAULT_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxusXYk2wISGmhKvCr4YX3BIuEZ5f-QqDSGSP-5AFqp5CPOaj1mBNpmBM4XVGCdYXHf/exec";
+    const DEFAULT_GOOGLE_SCRIPT_URL = "";
     const GOOGLE_SCRIPT_STORAGE_KEY  = "studentRegistrationGoogleScriptUrl";
     const BACKUP_TIME_STORAGE_KEY    = "studentRegistrationLastBackupAt";
     const STUDENT_CODE_PREFIX        = "STU";
@@ -1830,6 +1834,7 @@
         maleStudents: document.getElementById("male-students"),
         femaleStudents: document.getElementById("female-students"),
         lastSync: document.getElementById("last-sync"),
+        loadSheetBtn: document.getElementById("load-sheet-btn"),
         backupNowBtn: document.getElementById("backup-now-btn"),
         registrationForm: document.getElementById("registration-form"),
         editingId: document.getElementById("editing-id"),
@@ -2051,6 +2056,37 @@
 
     // ===================== GOOGLE SHEET =====================
     function getGoogleScriptUrl() { return localStorage.getItem(GOOGLE_SCRIPT_STORAGE_KEY) || DEFAULT_GOOGLE_SCRIPT_URL; }
+    function hasGoogleScriptUrl() { return Boolean(getGoogleScriptUrl()); }
+
+    function rememberSheetUrlFromQuery() {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            const url = params.get("sheet") || params.get("sheetUrl");
+            if (!url) return;
+            if (/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/i.test(url)) {
+                localStorage.setItem(GOOGLE_SCRIPT_STORAGE_KEY, url);
+                params.delete("sheet");
+                params.delete("sheetUrl");
+                const cleanQuery = params.toString();
+                const cleanUrl = `${window.location.pathname}${cleanQuery ? `?${cleanQuery}` : ""}${window.location.hash}`;
+                window.history.replaceState({}, "", cleanUrl);
+            }
+        } catch(e) {
+            console.warn("Cannot read sheet URL from query:", e);
+        }
+    }
+
+    function setCloudControlsLoading(loading) {
+        els.loadSheetBtn.disabled = loading || !hasGoogleScriptUrl();
+        els.backupNowBtn.disabled = loading || !hasGoogleScriptUrl();
+        if (loading) {
+            els.loadSheetBtn.innerHTML = '<span class="spinner"></span><span>Load...</span>';
+            els.backupNowBtn.innerHTML = '<span class="spinner"></span><span>Sync...</span>';
+        } else {
+            els.loadSheetBtn.innerHTML = '<ion-icon name="cloud-download-outline"></ion-icon><span>Load</span>';
+            els.backupNowBtn.innerHTML = '<ion-icon name="cloud-done-outline"></ion-icon><span>Backup</span>';
+        }
+    }
 
     function openSheetModal() {
         els.sheetUrlInput.value = getGoogleScriptUrl();
@@ -2064,7 +2100,9 @@
         if (!v) {
             localStorage.removeItem(GOOGLE_SCRIPT_STORAGE_KEY);
             closeSheetModal();
-            showToast("បានប្រើ URL ដើម");
+            setCloudControlsLoading(false);
+            setStatus("ឡូកាល់ (Offline)", "connected");
+            showToast("បានផ្ដាច់ Google Sheet");
             return;
         }
         if (!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/i.test(v)) {
@@ -2073,7 +2111,9 @@
         }
         localStorage.setItem(GOOGLE_SCRIPT_STORAGE_KEY, v);
         closeSheetModal();
+        setCloudControlsLoading(false);
         showToast("បានរក្សាទុក Google Sheet URL");
+        loadStudentsFromGoogleSheet({ silent:false, keepLocalWhenCloudEmpty:true });
     }
 
     async function syncGoogleSheet(action, student={}, studentId="", students=null) {
@@ -2090,6 +2130,96 @@
             }
         } catch(e) {
             console.error("Google Sheet sync error:", e);
+        }
+    }
+
+    function readGoogleSheetJsonp(params={}) {
+        const url = getGoogleScriptUrl();
+        if (!url) return Promise.reject(new Error("Missing Google Script URL"));
+        return new Promise((resolve, reject) => {
+            const callback = `studentSheetCb_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+            const script = document.createElement("script");
+            const timer = setTimeout(() => {
+                cleanup();
+                reject(new Error("Google Sheet response timeout"));
+            }, 15000);
+            function cleanup() {
+                clearTimeout(timer);
+                delete window[callback];
+                script.remove();
+            }
+            window[callback] = (payload) => {
+                cleanup();
+                resolve(payload || {});
+            };
+            try {
+                const u = new URL(url);
+                u.searchParams.set("action", "list");
+                u.searchParams.set("callback", callback);
+                Object.entries(params).forEach(([k,v]) => u.searchParams.set(k, v));
+                script.src = u.toString();
+                script.onerror = () => {
+                    cleanup();
+                    reject(new Error("Cannot load Google Sheet"));
+                };
+                document.head.append(script);
+            } catch(e) {
+                cleanup();
+                reject(e);
+            }
+        });
+    }
+
+    function normalizeCloudStudent(item={}, idx=0) {
+        const raw = item.student && typeof item.student === "object" ? { ...item.student } : { ...item };
+        const studentCode = raw.studentCode || raw.studentId || item.studentId || "";
+        const id = raw.recordId || raw.id || studentCode || `cloud-${idx}-${Math.random().toString(36).slice(2)}`;
+        const student = {
+            ...raw,
+            id,
+            studentCode,
+            gender: normGender(raw.gender),
+            dob: normDate(raw.dob),
+            contact: String(raw.contact || "").trim(),
+            createdAt: raw.createdAt || raw.sentAt || new Date().toISOString(),
+            updatedAt: raw.updatedAt || raw.sentAt || new Date().toISOString()
+        };
+        return { ...student, ...normStudentFields(student) };
+    }
+
+    async function loadStudentsFromGoogleSheet({ silent=false, keepLocalWhenCloudEmpty=true }={}) {
+        if (!hasGoogleScriptUrl()) {
+            setStatus("ឡូកាល់ (Offline)", "connected");
+            setCloudControlsLoading(false);
+            if (!silent) showToast("សូមភ្ជាប់ Google Sheet URL ជាមុន","warning");
+            return false;
+        }
+        setCloudControlsLoading(true);
+        setStatus("កំពុង Load ពី Sheet...", "");
+        try {
+            const payload = await readGoogleSheetJsonp();
+            if (payload.ok === false) throw new Error(payload.error || "Google Sheet error");
+            const cloudRows = Array.isArray(payload.students) ? payload.students : [];
+            const cloudStudents = cloudRows.map(normalizeCloudStudent).filter(s => s.studentName);
+            if (!cloudStudents.length && keepLocalWhenCloudEmpty && allStudents.length) {
+                setStatus("Sheet ទទេ - រក្សាទុក Local", "connected");
+                if (!silent) showToast("Google Sheet ទទេ។ ទិន្នន័យក្នុង browser ត្រូវបានរក្សាទុក","warning");
+                return false;
+            }
+            allStudents = cloudStudents;
+            saveToLocalStorage(allStudents);
+            localStorage.setItem(BACKUP_TIME_STORAGE_KEY, payload.updatedAt || new Date().toISOString());
+            await refreshStudents({ reset:true, source:"memory" });
+            setStatus("Google Sheet", "connected");
+            if (!silent) showToast(`Load ពី Google Sheet ${allStudents.length} នាក់`);
+            return true;
+        } catch(e) {
+            console.error("Google Sheet load error:", e);
+            setStatus("Sheet មិនបានភ្ជាប់", "error");
+            if (!silent) showToast("Load ពី Google Sheet មិនបាន","error");
+            return false;
+        } finally {
+            setCloudControlsLoading(false);
         }
     }
 
@@ -2373,7 +2503,7 @@
                 showToast(`បានបន្ថែម ${payload.studentName} (${payload.studentCode})`);
             }
             resetForm();
-            await refreshStudents({ reset: !editingId });
+            await refreshStudents({ reset: !editingId, source:"memory" });
         } catch(e) {
             console.error("Save error:", e);
             showToast("រក្សាទុកមិនបាន","error");
@@ -2405,7 +2535,7 @@
             closeDeleteModal();
             showToast("បានលុបសិស្ស");
             if (els.editingId.value === studentToDeleteId) resetForm();
-            await refreshStudents();
+            await refreshStudents({ source:"memory" });
         } catch(e) {
             console.error("Delete error:", e);
             showToast("លុបមិនបាន","error");
@@ -2443,7 +2573,7 @@
             await syncGoogleSheet("backup", {}, "", []);
             closeDeleteAllModal();
             resetForm();
-            await refreshStudents({ reset: true });
+            await refreshStudents({ reset: true, source:"memory" });
             showToast(`បានលុបទិន្នន័យសិស្ស ${count} នាក់`);
         } catch(e) {
             console.error("Delete all error:", e);
@@ -2462,6 +2592,7 @@
         els.femaleStudents.textContent = allStudents.filter(s => s.gender==="ស្រី").length;
         els.lastSync.textContent = formatTime();
         els.deleteAllBtn.disabled = totalStudentsCount === 0;
+        setCloudControlsLoading(false);
     }
 
     // ===================== FILTERS =====================
@@ -2719,9 +2850,9 @@
 
     function resetPagination() { currentPageIndex=0; hasNextPage=false; }
 
-    async function refreshStudents({ reset=false }={}) {
+    async function refreshStudents({ reset=false, source="local" }={}) {
         if (reset) resetPagination();
-        allStudents = loadFromLocalStorage();
+        if (source !== "memory") allStudents = loadFromLocalStorage();
         allStudents.sort((a,b) => tsMillis(b.createdAt)-tsMillis(a.createdAt));
         await updateStats();
         buildSchoolFilter();
@@ -2770,15 +2901,21 @@
     async function backupAllStudents() {
         setBackupLoading(true);
         try {
+            if (!hasGoogleScriptUrl()) {
+                showToast("សូមភ្ជាប់ Google Sheet URL ជាមុន","warning");
+                openSheetModal();
+                return;
+            }
             await syncGoogleSheet("backup", {}, "", allStudents);
             localStorage.setItem(BACKUP_TIME_STORAGE_KEY, new Date().toISOString());
             await logHistory("backup", "Google Sheet", { total: allStudents.length });
             showToast(`Backup ${allStudents.length} នាក់ ទៅ Google Sheet`);
+            setStatus("Google Sheet", "connected");
         } catch(e) {
             console.error("Backup error:", e);
             showToast("Backup មិនបាន","error");
         } finally {
-            setBackupLoading(false);
+            setCloudControlsLoading(false);
         }
     }
 
@@ -3100,7 +3237,7 @@
             allStudents=[...saved,...allStudents];
             saveToLocalStorage(allStudents);
             await logHistory("imported",label,{total:saved.length,skipped:skipped.length});
-            await syncGoogleSheet("backup",{},"",saved);
+            await syncGoogleSheet("backup",{},"",allStudents);
         }
         return{accepted:saved,skipped};
     }
@@ -3111,7 +3248,7 @@
             const students=rows.map(normImportRow);
             const result=await importStudentObjects(students,file.name);
             if(!result.accepted.length){showToast(`មិនមានជួរណាបាន Import។ រំលង ${result.skipped.length}`,"warning");}
-            else{showToast(`Import ${result.accepted.length} នាក់។ រំលង ${result.skipped.length}`);await refreshStudents({reset:true});}
+            else{showToast(`Import ${result.accepted.length} នាក់។ រំលង ${result.skipped.length}`);await refreshStudents({reset:true, source:"memory"});}
         }catch(e){console.error("Import error:",e);showToast("Import មិនបាន","error");}
         finally{setImporting(false);els.importFileInput.value="";}
     }
@@ -3195,6 +3332,7 @@
         els.deleteAllBtn.addEventListener("click",openDeleteAllModal);
 
         // Backup
+        els.loadSheetBtn.addEventListener("click",()=>loadStudentsFromGoogleSheet({ silent:false, keepLocalWhenCloudEmpty:true }));
         els.backupNowBtn.addEventListener("click",backupAllStudents);
 
         // Sheet modal
@@ -3203,6 +3341,8 @@
         els.saveSheetUrlBtn.addEventListener("click",saveSheetUrl);
         els.clearSheetUrlBtn.addEventListener("click",()=>{
             els.sheetUrlInput.value="";localStorage.removeItem(GOOGLE_SCRIPT_STORAGE_KEY);
+            setCloudControlsLoading(false);
+            setStatus("ឡូកាល់ (Offline)", "connected");
             closeSheetModal();showToast("បានសម្អាត Google Sheet URL");
         });
         els.sheetModal.addEventListener("click",e=>{if(e.target===els.sheetModal)closeSheetModal();});
@@ -3239,10 +3379,14 @@
         });
 
         // Local Offline Setup
-        setStatus("ឡូកាល់ (Offline)", "connected");
+        rememberSheetUrlFromQuery();
+        setCloudControlsLoading(false);
+        setStatus(hasGoogleScriptUrl() ? "Google Sheet" : "ឡូកាល់ (Offline)", "connected");
         const logs = loadHistoryFromLocalStorage();
         renderHistory(logs);
-        refreshStudents({ reset: true });
+        refreshStudents({ reset: true }).then(() => {
+            if (hasGoogleScriptUrl()) loadStudentsFromGoogleSheet({ silent:true, keepLocalWhenCloudEmpty:true });
+        });
     }
 
     document.addEventListener("DOMContentLoaded", init);
