@@ -671,6 +671,13 @@
 
         .toolbar select { width: auto; min-width: 130px; }
 
+        .toolbar-filters-pane {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
         /* ========================
            TABLE
         ======================== */
@@ -1077,6 +1084,151 @@
         /* ========================
            RESPONSIVE
         ======================== */
+        .mobile-menu-btn,
+        .mobile-tabs,
+        .filters-toggle-btn,
+        .mobile-actions-overlay,
+        .mobile-actions-sheet {
+            display: none;
+        }
+
+        .filters-toggle-btn {
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            height: 38px;
+            padding: 0 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--surface-2);
+            color: var(--text-2);
+            font-weight: 700;
+            font-size: .88rem;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .filters-toggle-btn.active {
+            background: var(--primary-soft);
+            border-color: var(--primary-glow);
+            color: var(--primary);
+        }
+
+        .mobile-tab-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            height: 42px;
+            border: none;
+            border-radius: var(--radius-sm);
+            background: transparent;
+            color: var(--text-2);
+            font-size: .9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .mobile-tab-btn.active {
+            background: var(--surface);
+            color: var(--primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .mobile-tab-btn ion-icon { width: 18px; height: 18px; }
+
+        .mobile-actions-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 90;
+            background: rgba(0,0,0,.45);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--transition);
+        }
+
+        .mobile-actions-overlay.is-open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .mobile-actions-sheet {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 100;
+            flex-direction: column;
+            max-height: 88vh;
+            border-radius: 18px 18px 0 0;
+            background: var(--surface);
+            box-shadow: 0 -10px 30px rgba(0,0,0,.18);
+            transform: translateY(100%);
+            overflow: hidden;
+            transition: transform 240ms cubic-bezier(.4,0,.2,1);
+        }
+
+        .mobile-actions-sheet.is-open { transform: translateY(0); }
+
+        .sheet-handle {
+            width: 42px;
+            height: 4px;
+            margin: 10px auto 8px;
+            border-radius: 999px;
+            background: var(--border-strong);
+            flex-shrink: 0;
+        }
+
+        .sheet-header {
+            padding: 0 18px 12px;
+            border-bottom: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .sheet-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .sheet-body {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            padding: 12px 12px calc(18px + env(safe-area-inset-bottom));
+            overflow-y: auto;
+        }
+
+        .sheet-menu-item {
+            min-height: 76px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--surface-2);
+            color: var(--text-2);
+            font-weight: 700;
+            font-size: .88rem;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .sheet-menu-item:active {
+            background: var(--primary-soft);
+            border-color: var(--primary-glow);
+            color: var(--primary-dark);
+        }
+
+        .sheet-menu-item ion-icon { width: 22px; height: 22px; color: var(--muted); }
+        .sheet-menu-item.danger-item { grid-column: 1 / -1; min-height: 48px; flex-direction: row; color: var(--red); background: var(--red-soft); }
+        .sheet-menu-item.danger-item ion-icon { color: var(--red); }
+
         @media (max-width: 1100px) {
             .main-layout { grid-template-columns: 1fr; }
             .form-panel { position: static; }
@@ -1085,24 +1237,272 @@
         }
 
         @media (max-width: 860px) {
-            .metrics { grid-template-columns: repeat(2, 1fr); }
+            html { scroll-padding-top: 126px; }
+
+            body { background: var(--surface-2); }
+
+            .app {
+                padding: 0 12px calc(28px + env(safe-area-inset-bottom));
+            }
+
+            .topbar {
+                min-height: 58px;
+                gap: 8px;
+                padding: 8px 12px;
+                margin: 0 -12px 10px;
+            }
+
+            .brand { gap: 8px; }
+            .brand-mark { width: 36px; height: 36px; border-radius: var(--radius-sm); }
+            .brand-title { font-size: .96rem; }
+            .brand-sub { display: none; }
+            .topbar-actions { gap: 6px; }
+            .topbar-actions .action-group { display: none; }
+            .mobile-menu-btn { display: inline-flex; width: 40px; height: 40px; padding: 0; }
+            .theme-btn { width: 40px; height: 40px; flex-shrink: 0; }
+            .status-pill {
+                height: 32px;
+                max-width: 126px;
+                padding: 0 9px;
+                gap: 6px;
+                font-size: .76rem;
+            }
+            #connection-text {
+                display: inline-block;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .metrics {
+                display: flex;
+                grid-template-columns: none;
+                gap: 8px;
+                margin: 0 -12px 10px;
+                padding: 0 12px 2px;
+                overflow-x: auto;
+                scroll-snap-type: x proximity;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .metric {
+                min-width: 136px;
+                scroll-snap-align: start;
+                padding: 10px 12px;
+                gap: 9px;
+                border-radius: var(--radius-sm);
+                box-shadow: none;
+            }
+
+            .metric-icon { width: 32px; height: 32px; }
+            .metric-icon ion-icon { width: 18px; height: 18px; }
+            .metric-label { font-size: .72rem; letter-spacing: 0; text-transform: none; }
+            .metric-value { font-size: 1.18rem; }
+            .metric-sub { display: none; }
+
+            .mobile-tabs {
+                position: sticky;
+                top: 58px;
+                z-index: 25;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 4px;
+                margin: 0 -12px 10px;
+                padding: 6px 12px;
+                border-top: 1px solid var(--border);
+                border-bottom: 1px solid var(--border);
+                background: var(--surface-2);
+                box-shadow: var(--shadow-sm);
+            }
+
+            .main-layout { gap: 0; }
+            .main-layout.show-list .form-panel { display: none; }
+            .main-layout.show-form .list-panel { display: none; }
+            .main-layout.show-form + .history-panel { display: none; }
+
+            .panel {
+                margin: 0 -12px;
+                border-left: 0;
+                border-right: 0;
+                border-radius: 0;
+                box-shadow: none;
+            }
+
+            .panel-header { padding: 12px 14px; }
+            .panel-title { font-size: .96rem; }
+            .panel-sub { font-size: .78rem; }
+
             .table-wrap { display: none; }
             .cards-list { display: flex; }
-            .toolbar { gap: 8px; }
-        }
 
-        @media (max-width: 600px) {
-            .topbar { padding: 10px 14px; flex-wrap: wrap; }
-            .brand-sub { display: none; }
-            .topbar-actions { flex-wrap: wrap; gap: 6px; }
-            .action-group { border-right: none; }
-            .metrics { grid-template-columns: 1fr 1fr; }
-            .app { padding: 0 12px 30px; }
-            .topbar { margin: 0 -12px 16px; }
+            .toolbar {
+                position: sticky;
+                top: 111px;
+                z-index: 20;
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
+                gap: 8px;
+                padding: 10px 12px;
+                border-bottom: 1px solid var(--border);
+                background: var(--surface);
+            }
+
+            .search-wrap {
+                width: 100%;
+                min-width: 0;
+            }
+
+            .search-wrap ion-icon { left: 13px; }
+            .search-wrap input {
+                height: 44px;
+                padding-left: 38px;
+                font-size: 16px;
+            }
+
+            .filters-toggle-btn { display: inline-flex; width: 44px; height: 44px; padding: 0; }
+            .filters-toggle-btn span { display: none; }
+
+            .toolbar-filters-pane {
+                display: none;
+                grid-column: 1 / -1;
+                grid-template-columns: 1fr;
+                gap: 8px;
+                padding: 10px;
+                border: 1px solid var(--border);
+                border-radius: var(--radius-sm);
+                background: var(--surface-2);
+            }
+
+            .toolbar-filters-pane.is-open { display: grid; }
+            .toolbar-filters-pane select { width: 100%; height: 44px; font-size: 16px; background: var(--surface); }
+            .toolbar select { min-width: 0; }
+
+            .form-body {
+                padding-bottom: calc(82px + env(safe-area-inset-bottom));
+            }
+
+            .form-section { padding: 14px; }
+            .section-header {
+                min-height: 44px;
+                margin: -4px 0 10px;
+            }
+
+            .field-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            input,
+            select,
+            .gender-opt span {
+                height: 46px;
+                font-size: 16px;
+            }
+
+            .check-row {
+                min-height: 46px;
+                padding: 10px 12px;
+            }
+
+            .form-save-bar {
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 35;
+                grid-template-columns: 1fr 52px;
+                gap: 8px;
+                padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+                background: var(--surface);
+                box-shadow: 0 -8px 24px rgba(0,0,0,.12);
+            }
+
+            .form-save-bar .btn { height: 48px; }
+            .form-save-bar .btn-ghost { width: 52px; padding: 0; }
+            .form-save-bar .btn-ghost span { display: none; }
+            .shortcuts-hint { display: none; }
+
+            .cards-list {
+                padding: 10px 12px 14px;
+                gap: 10px;
+            }
+
+            .student-card {
+                padding: 12px;
+                border-radius: var(--radius-sm);
+                box-shadow: none;
+            }
+
+            .student-card:hover { box-shadow: none; }
+            .card-head {
+                padding-bottom: 8px;
+                margin-bottom: 8px;
+            }
+            .student-name { font-size: .98rem; line-height: 1.35; }
+            .student-meta { font-size: .76rem; }
+            .card-meta { gap: 7px; font-size: .84rem; }
+            .card-meta-row { gap: 7px; }
+            .card-actions {
+                gap: 6px;
+                margin-top: 10px;
+                padding-top: 10px;
+            }
+            .card-act-btn {
+                height: 42px;
+                font-size: .8rem;
+            }
+
+            .class-card-header {
+                margin-bottom: 8px;
+                padding: 8px 12px;
+                border-radius: var(--radius-sm);
+                font-size: .88rem;
+            }
+
+            .pager {
+                align-items: stretch;
+                padding: 10px 12px 12px;
+            }
+
+            .pager-info { width: 100%; }
+            .pager-controls {
+                width: 100%;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .pager-controls .btn { height: 42px; }
+            .pager-page-size {
+                grid-column: 1 / -1;
+                width: 100% !important;
+                height: 42px !important;
+                font-size: .9rem !important;
+            }
+
+            .history-panel { display: none; }
+            .mobile-actions-overlay { display: block; }
+            .mobile-actions-sheet { display: flex; }
+
+            .toast-container {
+                top: auto;
+                right: 12px;
+                left: 12px;
+                bottom: calc(12px + env(safe-area-inset-bottom));
+            }
+
+            .toast {
+                min-width: 0;
+                max-width: none;
+                width: 100%;
+            }
         }
 
         @media (max-width: 400px) {
-            .metrics { grid-template-columns: 1fr; }
+            .status-pill { max-width: 108px; }
+            .brand-title { max-width: 132px; }
+            .metric { min-width: 124px; }
+            .card-actions span { display: none; }
+            .card-act-btn ion-icon { font-size: 1.2rem; }
         }
     </style>
 </head>
@@ -1174,6 +1574,11 @@
                 </button>
             </div>
 
+            <!-- Mobile menu -->
+            <button id="mobile-menu-btn" class="btn btn-ghost mobile-menu-btn" type="button" title="More actions" aria-label="More actions">
+                <ion-icon name="ellipsis-vertical-outline" aria-hidden="true"></ion-icon>
+            </button>
+
             <!-- Theme toggle -->
             <button id="theme-toggle" class="theme-btn" type="button" aria-label="Toggle dark mode">
                 <ion-icon class="icon-sun" name="sunny-outline"></ion-icon>
@@ -1226,8 +1631,20 @@
         </div>
     </section>
 
+    <!-- ======================== MOBILE TABS ======================== -->
+    <div class="mobile-tabs" aria-label="Mobile view tabs">
+        <button id="tab-list-btn" class="mobile-tab-btn active" type="button">
+            <ion-icon name="list-outline" aria-hidden="true"></ion-icon>
+            <span>បញ្ជីសិស្ស</span>
+        </button>
+        <button id="tab-form-btn" class="mobile-tab-btn" type="button">
+            <ion-icon name="person-add-outline" aria-hidden="true"></ion-icon>
+            <span>ចុះឈ្មោះថ្មី</span>
+        </button>
+    </div>
+
     <!-- ======================== MAIN LAYOUT ======================== -->
-    <div class="main-layout">
+    <div class="main-layout show-list">
 
         <!-- FORM PANEL -->
         <section class="panel form-panel" id="form-panel" aria-label="ចុះឈ្មោះសិស្ស">
@@ -1420,7 +1837,7 @@
         </section>
 
         <!-- STUDENTS LIST PANEL -->
-        <section class="panel" aria-label="បញ្ជីសិស្ស">
+        <section class="panel list-panel" aria-label="បញ្ជីសិស្ស">
             <div class="panel-header">
                 <div>
                     <h2 class="panel-title">បញ្ជីសិស្ស</h2>
@@ -1434,17 +1851,23 @@
                     <ion-icon name="search-outline" aria-hidden="true"></ion-icon>
                     <input id="search-input" type="search" placeholder="ស្វែងរកឈ្មោះ លេខ ទូរស័ព្ទ...">
                 </div>
-                <select id="gender-filter" aria-label="តម្រងភេទ">
-                    <option value="">ភេទទាំងអស់</option>
-                    <option value="ប្រុស">ប្រុស</option>
-                    <option value="ស្រី">ស្រី</option>
-                </select>
-                <select id="class-filter" aria-label="តម្រងថ្នាក់">
-                    <option value="">ថ្នាក់ទាំងអស់</option>
-                </select>
-                <select id="school-filter" aria-label="តម្រងសាលា">
-                    <option value="">សាលាទាំងអស់</option>
-                </select>
+                <button id="toggle-filters-btn" class="filters-toggle-btn" type="button" title="Filters" aria-label="Filters">
+                    <ion-icon name="funnel-outline" aria-hidden="true"></ion-icon>
+                    <span>តម្រង</span>
+                </button>
+                <div id="toolbar-filters" class="toolbar-filters-pane">
+                    <select id="gender-filter" aria-label="តម្រងភេទ">
+                        <option value="">ភេទទាំងអស់</option>
+                        <option value="ប្រុស">ប្រុស</option>
+                        <option value="ស្រី">ស្រី</option>
+                    </select>
+                    <select id="class-filter" aria-label="តម្រងថ្នាក់">
+                        <option value="">ថ្នាក់ទាំងអស់</option>
+                    </select>
+                    <select id="school-filter" aria-label="តម្រងសាលា">
+                        <option value="">សាលាទាំងអស់</option>
+                    </select>
+                </div>
             </div>
 
             <!-- Desktop Table -->
@@ -1611,6 +2034,49 @@
 
 <!-- ======================== TOAST CONTAINER ======================== -->
 <div id="toast-container" class="toast-container" aria-live="assertive" aria-atomic="true"></div>
+
+<!-- ======================== MOBILE ACTIONS SHEET ======================== -->
+<div id="mobile-actions-overlay" class="mobile-actions-overlay"></div>
+<div id="mobile-actions-sheet" class="mobile-actions-sheet" role="dialog" aria-modal="true" aria-labelledby="mobile-actions-title">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+        <h3 id="mobile-actions-title" class="sheet-title">ម៉ឺនុយសកម្មភាព</h3>
+    </div>
+    <div class="sheet-body">
+        <button id="m-sheet-settings-btn" class="sheet-menu-item" type="button">
+            <ion-icon name="grid-outline" aria-hidden="true"></ion-icon>
+            <span>Sheet</span>
+        </button>
+        <button id="m-load-sheet-btn" class="sheet-menu-item" type="button">
+            <ion-icon name="cloud-download-outline" aria-hidden="true"></ion-icon>
+            <span>Load</span>
+        </button>
+        <button id="m-backup-now-btn" class="sheet-menu-item" type="button">
+            <ion-icon name="cloud-done-outline" aria-hidden="true"></ion-icon>
+            <span>Backup</span>
+        </button>
+        <button id="m-download-template-btn" class="sheet-menu-item" type="button">
+            <ion-icon name="document-text-outline" aria-hidden="true"></ion-icon>
+            <span>គំរូ</span>
+        </button>
+        <button id="m-import-file-btn" class="sheet-menu-item" type="button">
+            <ion-icon name="cloud-upload-outline" aria-hidden="true"></ion-icon>
+            <span>Import</span>
+        </button>
+        <button id="m-print-list-btn" class="sheet-menu-item" type="button">
+            <ion-icon name="print-outline" aria-hidden="true"></ion-icon>
+            <span>Print</span>
+        </button>
+        <button id="m-download-csv-btn" class="sheet-menu-item" type="button">
+            <ion-icon name="download-outline" aria-hidden="true"></ion-icon>
+            <span>CSV</span>
+        </button>
+        <button id="m-delete-all-btn" class="sheet-menu-item danger-item" type="button">
+            <ion-icon name="trash-outline" aria-hidden="true"></ion-icon>
+            <span>លុបទាំងអស់</span>
+        </button>
+    </div>
+</div>
 
 <!-- ======================== SCRIPTS ======================== -->
 <script>
@@ -1878,7 +2344,15 @@
         confirmDeleteAllBtn: document.getElementById("confirm-delete-all-btn"),
         cancelDeleteAllBtn: document.getElementById("cancel-delete-all-btn"),
         toastContainer: document.getElementById("toast-container"),
-        themeToggle: document.getElementById("theme-toggle")
+        themeToggle: document.getElementById("theme-toggle"),
+        mobileMenuBtn: document.getElementById("mobile-menu-btn"),
+        mobileActionsOverlay: document.getElementById("mobile-actions-overlay"),
+        mobileActionsSheet: document.getElementById("mobile-actions-sheet"),
+        tabListBtn: document.getElementById("tab-list-btn"),
+        tabFormBtn: document.getElementById("tab-form-btn"),
+        toggleFiltersBtn: document.getElementById("toggle-filters-btn"),
+        toolbarFilters: document.getElementById("toolbar-filters"),
+        mainLayout: document.querySelector(".main-layout")
     };
 
     const pobGroup = {
@@ -2391,6 +2865,16 @@
         }
     }
 
+    function setActiveTab(tab) {
+        if (!els.mainLayout) return;
+        const isForm = tab === "form";
+        els.mainLayout.classList.toggle("show-form", isForm);
+        els.mainLayout.classList.toggle("show-list", !isForm);
+        els.tabFormBtn?.classList.toggle("active", isForm);
+        els.tabListBtn?.classList.toggle("active", !isForm);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
     function resetForm() {
         els.registrationForm.reset();
         setEditMode("");
@@ -2417,6 +2901,7 @@
         els.sameAddress.checked = addressesMatch(s);
         lockCurrentAddress(els.sameAddress.checked);
         setEditMode(id);
+        if (window.matchMedia("(max-width: 860px)").matches) setActiveTab("form");
         els.formPanel.scrollIntoView({ behavior:"smooth", block:"start" });
     }
 
@@ -2504,6 +2989,7 @@
             }
             resetForm();
             await refreshStudents({ reset: !editingId, source:"memory" });
+            if (window.matchMedia("(max-width: 860px)").matches) setActiveTab("list");
         } catch(e) {
             console.error("Save error:", e);
             showToast("រក្សាទុកមិនបាន","error");
@@ -3369,6 +3855,45 @@
         els.confirmDeleteAllBtn.addEventListener("click",handleDeleteAllStudents);
         els.deleteAllModal.addEventListener("click",e=>{if(e.target===els.deleteAllModal)closeDeleteAllModal();});
 
+        // Mobile UI
+        els.tabListBtn?.addEventListener("click", () => setActiveTab("list"));
+        els.tabFormBtn?.addEventListener("click", () => setActiveTab("form"));
+        els.toggleFiltersBtn?.addEventListener("click", () => {
+            els.toolbarFilters?.classList.toggle("is-open");
+            els.toggleFiltersBtn.classList.toggle("active");
+        });
+
+        function closeMobileActions() {
+            els.mobileActionsOverlay?.classList.remove("is-open");
+            els.mobileActionsSheet?.classList.remove("is-open");
+        }
+
+        els.mobileMenuBtn?.addEventListener("click", () => {
+            els.mobileActionsOverlay?.classList.add("is-open");
+            els.mobileActionsSheet?.classList.add("is-open");
+        });
+        els.mobileActionsOverlay?.addEventListener("click", closeMobileActions);
+
+        const mobileMenuActions = {
+            "m-sheet-settings-btn": els.sheetSettingsBtn,
+            "m-load-sheet-btn": els.loadSheetBtn,
+            "m-backup-now-btn": els.backupNowBtn,
+            "m-download-template-btn": els.downloadTemplateBtn,
+            "m-import-file-btn": els.importFileBtn,
+            "m-print-list-btn": els.printListBtn,
+            "m-download-csv-btn": els.downloadCsvBtn,
+            "m-delete-all-btn": els.deleteAllBtn
+        };
+
+        Object.entries(mobileMenuActions).forEach(([mobileId, desktopBtn]) => {
+            const btn = document.getElementById(mobileId);
+            if (!btn || !desktopBtn) return;
+            btn.addEventListener("click", () => {
+                closeMobileActions();
+                desktopBtn.click();
+            });
+        });
+
         // Theme
         els.themeToggle.addEventListener("click",()=>{
             const next=document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark";
@@ -3382,6 +3907,7 @@
                 if(els.deleteModal.classList.contains("is-open")){closeDeleteModal();return;}
                 if(els.deleteAllModal.classList.contains("is-open")){closeDeleteAllModal();return;}
                 if(els.sheetModal.classList.contains("is-open")){closeSheetModal();return;}
+                if(els.mobileActionsSheet?.classList.contains("is-open")){closeMobileActions();return;}
                 if(els.editingId.value){resetForm();return;}
             }
             if(e.ctrlKey&&e.key==="Enter"&&document.activeElement&&els.registrationForm.contains(document.activeElement)){
