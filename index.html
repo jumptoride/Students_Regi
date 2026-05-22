@@ -1,0 +1,3251 @@
+<!DOCTYPE html>
+<html lang="km" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ប្រព័ន្ធចុះឈ្មោះសិស្ស</title>
+    <meta name="description" content="គ្រប់គ្រងបញ្ជីសិស្ស ស្វែងរក Import Print និងទាញយក CSV">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet">
+    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        /* ========================
+           DESIGN TOKENS
+        ======================== */
+        :root {
+            --hue: 174;
+            --primary: hsl(var(--hue), 80%, 32%);
+            --primary-dark: hsl(var(--hue), 80%, 24%);
+            --primary-mid: hsl(var(--hue), 70%, 40%);
+            --primary-soft: hsl(var(--hue), 60%, 94%);
+            --primary-glow: hsla(var(--hue), 70%, 40%, 0.18);
+
+            --blue: #2563eb;
+            --blue-soft: #dbeafe;
+            --green: #15803d;
+            --green-soft: #dcfce7;
+            --amber: #b45309;
+            --amber-soft: #fef3c7;
+            --red: #b91c1c;
+            --red-soft: #fee2e2;
+            --violet: #7c3aed;
+            --violet-soft: #ede9fe;
+
+            /* Light theme surfaces */
+            --bg: #f0f4f3;
+            --surface: #ffffff;
+            --surface-2: #f7f9f8;
+            --surface-3: #eef2f1;
+            --border: #dce5e2;
+            --border-strong: #bfceca;
+            --text: #0e1a17;
+            --text-2: #3a4d48;
+            --muted: #647a74;
+            --muted-light: #9bb4ae;
+
+            --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+            --shadow: 0 4px 16px rgba(0,0,0,.07), 0 1px 4px rgba(0,0,0,.05);
+            --shadow-lg: 0 12px 40px rgba(0,0,0,.1), 0 2px 8px rgba(0,0,0,.06);
+            --radius: 10px;
+            --radius-sm: 6px;
+            --radius-lg: 14px;
+            --transition: 160ms cubic-bezier(.4,0,.2,1);
+        }
+
+        [data-theme="dark"] {
+            --bg: #0d1514;
+            --surface: #131f1d;
+            --surface-2: #192421;
+            --surface-3: #1f2e2b;
+            --border: #253330;
+            --border-strong: #354a46;
+            --text: #e8f0ee;
+            --text-2: #b0c4bf;
+            --muted: #7a9e97;
+            --muted-light: #4d6b64;
+            --primary: hsl(var(--hue), 70%, 48%);
+            --primary-dark: hsl(var(--hue), 70%, 38%);
+            --primary-mid: hsl(var(--hue), 65%, 55%);
+            --primary-soft: hsla(var(--hue), 60%, 30%, .25);
+            --primary-glow: hsla(var(--hue), 70%, 50%, .22);
+            --blue-soft: #1e3a6e;
+            --green-soft: #14432a;
+            --amber-soft: #422006;
+            --red-soft: #450a0a;
+            --violet-soft: #2e1065;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,.25);
+            --shadow: 0 4px 16px rgba(0,0,0,.3);
+            --shadow-lg: 0 12px 40px rgba(0,0,0,.4);
+        }
+
+        /* ========================
+           RESET & BASE
+        ======================== */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: "Kantumruy Pro", "Khmer OS", Arial, sans-serif;
+            font-size: 15px;
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--bg);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background var(--transition), color var(--transition);
+        }
+
+        button, input, select, textarea { font: inherit; }
+        button { cursor: pointer; }
+        button:disabled, input:disabled, select:disabled { cursor: not-allowed; opacity: .65; }
+        h1, h2, h3, h4, p { margin: 0; }
+        a { color: inherit; text-decoration: none; }
+
+        /* ========================
+           SCROLLBAR
+        ======================== */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+        /* ========================
+           LAYOUT
+        ======================== */
+        .app {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 20px 40px;
+        }
+
+        /* ========================
+           TOPBAR / HEADER
+        ======================== */
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            margin: 0 -20px 20px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .brand-mark {
+            width: 42px;
+            height: 42px;
+            display: grid;
+            place-items: center;
+            flex-shrink: 0;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #fff;
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+
+        .brand-mark ion-icon { width: 22px; height: 22px; }
+
+        .brand-text { min-width: 0; }
+
+        .brand-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .brand-sub {
+            font-size: 0.78rem;
+            color: var(--muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .action-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 0 4px;
+            border-right: 1px solid var(--border);
+        }
+
+        .action-group:last-child { border-right: none; padding-right: 0; }
+
+        /* Status pill */
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            height: 34px;
+            padding: 0 11px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            font-size: .82rem;
+            font-weight: 600;
+            color: var(--muted);
+            background: var(--surface-2);
+            white-space: nowrap;
+            transition: all var(--transition);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: var(--amber);
+            flex-shrink: 0;
+            transition: background var(--transition);
+        }
+
+        .status-pill.connected { color: var(--green); border-color: #a3d9b5; background: var(--green-soft); }
+        .status-pill.connected .status-dot { background: var(--green); box-shadow: 0 0 0 3px rgba(21,128,61,.2); }
+        .status-pill.error { color: var(--red); border-color: #f9a8a8; background: var(--red-soft); }
+        .status-pill.error .status-dot { background: var(--red); }
+
+        /* ========================
+           BUTTONS
+        ======================== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            height: 36px;
+            padding: 0 13px;
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            font-size: .88rem;
+            color: var(--text);
+            background: var(--surface);
+            white-space: nowrap;
+            transition: all var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: currentColor;
+            opacity: 0;
+            transition: opacity var(--transition);
+        }
+
+        .btn:hover::after { opacity: .07; }
+        .btn:active::after { opacity: .14; }
+        .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+        .btn:active { transform: translateY(0); box-shadow: none; }
+
+        .btn ion-icon { width: 17px; height: 17px; flex-shrink: 0; }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #fff;
+            border-color: transparent;
+            box-shadow: 0 2px 8px var(--primary-glow);
+        }
+
+        .btn-primary:hover { box-shadow: 0 4px 16px var(--primary-glow); }
+
+        .btn-secondary {
+            background: var(--primary-soft);
+            color: var(--primary-dark);
+            border-color: hsla(var(--hue), 50%, 60%, .3);
+        }
+
+        .btn-ghost {
+            border-color: var(--border);
+            background: var(--surface);
+            color: var(--text-2);
+        }
+
+        .btn-ghost:hover { background: var(--surface-3); border-color: var(--border-strong); }
+
+        .btn-danger { background: var(--red); color: #fff; border-color: transparent; }
+        .btn-danger:hover { box-shadow: 0 4px 14px rgba(185,28,28,.3); }
+
+        .btn-sm {
+            height: 30px;
+            padding: 0 9px;
+            font-size: .82rem;
+        }
+
+        .btn-icon {
+            width: 34px;
+            height: 34px;
+            padding: 0;
+            border-color: var(--border);
+            color: var(--muted);
+        }
+
+        .btn-icon:hover { color: var(--primary); border-color: var(--primary); }
+        .btn-icon ion-icon { width: 18px; height: 18px; }
+
+        .btn-lg {
+            height: 44px;
+            padding: 0 20px;
+            font-size: 1rem;
+            border-radius: var(--radius);
+        }
+
+        /* Theme toggle */
+        .theme-btn {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--surface);
+            color: var(--muted);
+            display: grid;
+            place-items: center;
+            transition: all var(--transition);
+        }
+
+        .theme-btn:hover { color: var(--amber); border-color: var(--amber); background: var(--amber-soft); }
+        .theme-btn ion-icon { width: 19px; height: 19px; }
+        .theme-btn .icon-moon { display: none; }
+        [data-theme="dark"] .theme-btn .icon-sun { display: none; }
+        [data-theme="dark"] .theme-btn .icon-moon { display: block; }
+
+        /* ========================
+           METRICS
+        ======================== */
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .metric {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px 18px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--surface);
+            box-shadow: var(--shadow-sm);
+            transition: all var(--transition);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .metric::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 3px;
+            height: 100%;
+            background: var(--metric-color, var(--primary));
+            border-radius: 0 2px 2px 0;
+        }
+
+        .metric:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+
+        .metric-icon {
+            width: 44px;
+            height: 44px;
+            display: grid;
+            place-items: center;
+            border-radius: var(--radius-sm);
+            background: var(--metric-bg, var(--primary-soft));
+            color: var(--metric-color, var(--primary));
+            flex-shrink: 0;
+            transition: all var(--transition);
+        }
+
+        .metric-icon ion-icon { width: 22px; height: 22px; }
+        .metric:hover .metric-icon { transform: scale(1.08); }
+
+        .metric-body { min-width: 0; }
+
+        .metric-label {
+            font-size: .8rem;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .metric-value {
+            font-size: 1.65rem;
+            font-weight: 700;
+            line-height: 1.15;
+            color: var(--text);
+        }
+
+        .metric-sub {
+            font-size: .78rem;
+            color: var(--muted);
+        }
+
+        .metric-total { --metric-color: var(--primary); --metric-bg: var(--primary-soft); }
+        .metric-male { --metric-color: var(--blue); --metric-bg: var(--blue-soft); }
+        .metric-female { --metric-color: var(--violet); --metric-bg: var(--violet-soft); }
+        .metric-sync { --metric-color: var(--green); --metric-bg: var(--green-soft); }
+
+        /* ========================
+           MAIN LAYOUT
+        ======================== */
+        .main-layout {
+            display: grid;
+            grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
+            gap: 14px;
+            align-items: start;
+        }
+
+        /* ========================
+           PANELS
+        ======================== */
+        .panel {
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            background: var(--surface);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: background var(--transition), border-color var(--transition);
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface-2);
+        }
+
+        .panel-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .panel-sub {
+            font-size: .82rem;
+            color: var(--muted);
+            margin-top: 1px;
+        }
+
+        /* ========================
+           REGISTRATION FORM
+        ======================== */
+        .form-panel {
+            position: sticky;
+            top: 70px;
+        }
+
+        .form-body {
+            padding: 0 0 72px; /* bottom space for sticky save */
+            max-height: calc(100vh - 160px);
+            overflow-y: auto;
+        }
+
+        .form-section {
+            padding: 16px 18px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .form-section:last-of-type { border-bottom: none; }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .section-icon {
+            width: 28px;
+            height: 28px;
+            display: grid;
+            place-items: center;
+            border-radius: var(--radius-sm);
+            background: var(--primary-soft);
+            color: var(--primary);
+            flex-shrink: 0;
+        }
+
+        .section-icon ion-icon { width: 15px; height: 15px; }
+
+        .section-title {
+            font-size: .88rem;
+            font-weight: 700;
+            color: var(--text);
+            flex: 1;
+        }
+
+        .section-chevron {
+            color: var(--muted);
+            transition: transform var(--transition);
+        }
+
+        .section-chevron ion-icon { width: 16px; height: 16px; }
+        .section-collapsed .section-chevron { transform: rotate(-90deg); }
+        .section-collapsed .section-body { display: none; }
+
+        .field-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .field-full { grid-column: 1 / -1; }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-size: .82rem;
+            font-weight: 600;
+            color: var(--text-2);
+        }
+
+        .required::after { content: " *"; color: var(--red); }
+
+        input, select {
+            width: 100%;
+            height: 40px;
+            padding: 0 11px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            background: var(--surface);
+            outline: none;
+            transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+        }
+
+        input:focus, select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        input:read-only {
+            background: var(--surface-3);
+            color: var(--muted);
+            cursor: default;
+        }
+
+        /* Gender radio */
+        .gender-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .gender-opt { position: relative; }
+        .gender-opt input { position: absolute; opacity: 0; pointer-events: none; }
+
+        .gender-opt span {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            height: 40px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-weight: 700;
+            color: var(--muted);
+            background: var(--surface);
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .gender-opt span ion-icon { width: 16px; height: 16px; }
+        .gender-opt input:checked + span {
+            border-color: var(--primary);
+            color: var(--primary-dark);
+            background: var(--primary-soft);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        /* Same address checkbox */
+        .check-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: var(--radius-sm);
+            border: 1.5px solid var(--border);
+            cursor: pointer;
+            transition: all var(--transition);
+            margin-bottom: 10px;
+        }
+
+        .check-row:hover { border-color: var(--primary); background: var(--primary-soft); }
+
+        .check-row input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            min-height: unset;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .check-row span { font-size: .85rem; font-weight: 600; color: var(--text-2); }
+
+        /* Sticky save bar */
+        .form-save-bar {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            padding: 12px 18px;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            box-shadow: 0 -4px 16px rgba(0,0,0,.06);
+        }
+
+        .form-save-bar .btn-primary { height: 42px; font-size: .95rem; }
+        .form-save-bar .btn-ghost { height: 42px; }
+
+        /* ========================
+           TOOLBAR
+        ======================== */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+
+        .search-wrap {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+
+        .search-wrap ion-icon {
+            position: absolute;
+            left: 11px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 17px;
+            height: 17px;
+            color: var(--muted);
+            pointer-events: none;
+        }
+
+        .search-wrap input { padding-left: 38px; }
+
+        .toolbar select { width: auto; min-width: 130px; }
+
+        /* ========================
+           TABLE
+        ======================== */
+        .table-wrap {
+            overflow-x: auto;
+            max-height: none;
+        }
+
+        table {
+            width: 100%;
+            min-width: 1580px;
+            border-collapse: collapse;
+            border: 1px solid var(--border);
+        }
+
+        thead th {
+            padding: 8px 10px;
+            background: var(--surface-3);
+            border: 1px solid var(--border);
+            font-size: .78rem;
+            font-weight: 700;
+            color: var(--muted);
+            letter-spacing: .02em;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background var(--transition);
+        }
+
+        tbody tr:nth-child(even) { background: var(--surface-2); }
+        tbody tr:hover { background: var(--primary-soft) !important; }
+
+        tbody td {
+            padding: 10px 12px;
+            font-size: .88rem;
+            vertical-align: middle;
+            border: 1px solid var(--border);
+        }
+
+        .student-name { font-weight: 700; color: var(--text); }
+        .student-meta { font-size: .78rem; color: var(--muted); margin-top: 2px; }
+
+        /* Class group row */
+        .class-group-row td {
+            padding: 8px 14px;
+            background: linear-gradient(90deg, var(--primary-soft), transparent);
+            border-top: 2px solid var(--border);
+            font-weight: 700;
+            font-size: .82rem;
+            color: var(--primary-dark);
+        }
+
+        .class-count {
+            display: inline-flex;
+            align-items: center;
+            height: 20px;
+            padding: 0 8px;
+            border-radius: 999px;
+            background: var(--primary-glow);
+            font-size: .75rem;
+            color: var(--primary-dark);
+            margin-left: 8px;
+        }
+
+        /* Row actions */
+        .row-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 6px;
+            opacity: 0;
+            transition: opacity var(--transition);
+        }
+
+        tbody tr:hover .row-actions { opacity: 1; }
+
+        /* Mobile cards */
+        .cards-list {
+            display: none;
+            padding: 12px;
+            gap: 10px;
+            flex-direction: column;
+        }
+
+        .student-card {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px;
+            background: var(--surface);
+            transition: all var(--transition);
+        }
+
+        .student-card:hover { box-shadow: var(--shadow); border-color: var(--border-strong); }
+
+        .card-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .card-meta {
+            display: grid;
+            gap: 4px;
+            margin-top: 10px;
+            font-size: .85rem;
+            color: var(--muted);
+        }
+
+        .class-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            background: var(--primary-soft);
+            color: var(--primary-dark);
+            font-weight: 700;
+            font-size: .9rem;
+            margin-bottom: 8px;
+        }
+
+        /* ========================
+           BADGES
+        ======================== */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            height: 24px;
+            padding: 0 8px;
+            border-radius: 999px;
+            font-size: .78rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .badge-teal { background: var(--primary-soft); color: var(--primary-dark); }
+        .badge-blue { background: var(--blue-soft); color: #1d4ed8; }
+        .badge-violet { background: var(--violet-soft); color: #6d28d9; }
+        .badge-amber { background: var(--amber-soft); color: var(--amber); }
+        .badge-green { background: var(--green-soft); color: var(--green); }
+        .badge-red { background: var(--red-soft); color: var(--red); }
+
+        /* ========================
+           PAGER
+        ======================== */
+        .pager {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 16px;
+            border-top: 1px solid var(--border);
+            background: var(--surface-2);
+            flex-wrap: wrap;
+        }
+
+        .pager-info { font-size: .82rem; font-weight: 600; color: var(--muted); }
+
+        .pager-controls { display: flex; align-items: center; gap: 8px; }
+        .pager-controls select { width: auto; min-width: 110px; height: 34px; }
+
+        /* ========================
+           EMPTY & LOADING
+        ======================== */
+        .empty {
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--muted);
+        }
+
+        .empty ion-icon { width: 42px; height: 42px; margin-bottom: 10px; display: block; margin-inline: auto; opacity: .4; }
+        .empty p { font-size: .9rem; }
+
+        /* Skeleton loader */
+        @keyframes shimmer {
+            0% { background-position: -600px 0; }
+            100% { background-position: 600px 0; }
+        }
+
+        .skeleton {
+            background: linear-gradient(90deg, var(--surface-3) 25%, var(--surface-2) 50%, var(--surface-3) 75%);
+            background-size: 1200px 100%;
+            animation: shimmer 1.4s ease-in-out infinite;
+            border-radius: var(--radius-sm);
+        }
+
+        .skeleton-row td { padding: 12px 14px; }
+        .skeleton-line {
+            height: 14px;
+            border-radius: 4px;
+        }
+
+        /* ========================
+           HISTORY
+        ======================== */
+        .history-panel { margin-top: 14px; }
+
+        .history-list {
+            padding: 14px 16px;
+            display: grid;
+            gap: 8px;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--surface);
+            transition: all var(--transition);
+        }
+
+        .history-item:hover { border-color: var(--border-strong); background: var(--surface-2); }
+
+        .history-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            margin-top: 6px;
+            flex-shrink: 0;
+        }
+
+        .history-added .history-dot { background: var(--green); }
+        .history-edited .history-dot { background: var(--amber); }
+        .history-deleted .history-dot { background: var(--red); }
+        .history-backup .history-dot { background: var(--blue); }
+
+        .history-body { min-width: 0; flex: 1; }
+        .history-action { font-weight: 700; font-size: .88rem; }
+        .history-added .history-action { color: var(--green); }
+        .history-edited .history-action { color: var(--amber); }
+        .history-deleted .history-action { color: var(--red); }
+        .history-backup .history-action { color: var(--blue); }
+        .history-time { font-size: .78rem; color: var(--muted); }
+
+        /* ========================
+           MODALS
+        ======================== */
+        .modal {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(0,0,0,.45);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            animation: fadeIn 200ms ease;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+        .modal.is-open { display: flex; }
+
+        .modal-dialog {
+            width: min(480px, 100%);
+            border-radius: var(--radius-lg);
+            background: var(--surface);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            animation: slideUp 220ms cubic-bezier(.4,0,.2,1);
+        }
+
+        .modal-body { padding: 22px; }
+
+        .modal-icon {
+            width: 44px;
+            height: 44px;
+            display: grid;
+            place-items: center;
+            border-radius: var(--radius);
+            margin-bottom: 14px;
+        }
+
+        .modal-icon ion-icon { width: 22px; height: 22px; }
+        .modal-icon-danger { background: var(--red-soft); color: var(--red); }
+        .modal-icon-primary { background: var(--primary-soft); color: var(--primary); }
+
+        .modal-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; }
+        .modal-desc { font-size: .9rem; color: var(--muted); line-height: 1.6; }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 14px 22px;
+            border-top: 1px solid var(--border);
+            background: var(--surface-2);
+        }
+
+        .modal-footer .btn { height: 40px; }
+
+        /* ========================
+           TOAST
+        ======================== */
+        .toast-container {
+            position: fixed;
+            top: 70px;
+            right: 18px;
+            z-index: 60;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        .toast {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: var(--radius);
+            font-size: .9rem;
+            font-weight: 600;
+            color: #fff;
+            background: var(--text);
+            box-shadow: var(--shadow-lg);
+            min-width: 280px;
+            max-width: 400px;
+            pointer-events: auto;
+            animation: slideInRight 250ms cubic-bezier(.4,0,.2,1);
+            transition: opacity 300ms ease, transform 300ms ease;
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(60px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .toast.leaving { opacity: 0; transform: translateX(60px); }
+
+        .toast.success { background: #166534; }
+        .toast.error { background: #991b1b; }
+        .toast.warning { background: #92400e; }
+        .toast ion-icon { width: 20px; height: 20px; flex-shrink: 0; }
+        .toast-msg { flex: 1; }
+
+        /* ========================
+           SPINNER
+        ======================== */
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,.35);
+            border-top-color: #fff;
+            border-radius: 999px;
+            animation: spin 650ms linear infinite;
+            flex-shrink: 0;
+        }
+
+        .spinner-dark {
+            border-color: rgba(0,0,0,.15);
+            border-top-color: var(--primary);
+        }
+
+        /* ========================
+           UTILITY
+        ======================== */
+        .is-hidden { display: none !important; }
+        .hidden-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); clip-path: inset(50%); }
+        .muted { color: var(--muted); }
+        .divider { height: 1px; background: var(--border); margin: 0; }
+
+        /* Keyboard hint badge */
+        .kbd {
+            display: inline-flex;
+            align-items: center;
+            height: 20px;
+            padding: 0 5px;
+            border: 1px solid var(--border-strong);
+            border-radius: 4px;
+            font-size: .7rem;
+            font-family: monospace;
+            color: var(--muted);
+            background: var(--surface-3);
+        }
+
+        /* Shortcut hint */
+        .shortcuts-hint {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 18px;
+            border-top: 1px solid var(--border);
+            background: var(--surface-2);
+            font-size: .75rem;
+            color: var(--muted);
+            flex-wrap: wrap;
+        }
+
+        /* ========================
+           RESPONSIVE
+        ======================== */
+        @media (max-width: 1100px) {
+            .main-layout { grid-template-columns: 1fr; }
+            .form-panel { position: static; }
+            .form-body { max-height: none; padding-bottom: 0; }
+            .form-save-bar { position: sticky; }
+        }
+
+        @media (max-width: 860px) {
+            .metrics { grid-template-columns: repeat(2, 1fr); }
+            .table-wrap { display: none; }
+            .cards-list { display: flex; }
+            .toolbar { gap: 8px; }
+        }
+
+        @media (max-width: 600px) {
+            .topbar { padding: 10px 14px; flex-wrap: wrap; }
+            .brand-sub { display: none; }
+            .topbar-actions { flex-wrap: wrap; gap: 6px; }
+            .action-group { border-right: none; }
+            .metrics { grid-template-columns: 1fr 1fr; }
+            .app { padding: 0 12px 30px; }
+            .topbar { margin: 0 -12px 16px; }
+        }
+
+        @media (max-width: 400px) {
+            .metrics { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<main class="app">
+
+    <!-- ======================== TOPBAR ======================== -->
+    <header class="topbar">
+        <div class="brand">
+            <div class="brand-mark" aria-hidden="true">
+                <ion-icon name="school-outline"></ion-icon>
+            </div>
+            <div class="brand-text">
+                <div class="brand-title">ប្រព័ន្ធចុះឈ្មោះសិស្ស</div>
+                <div class="brand-sub">Student Registration System</div>
+            </div>
+        </div>
+
+        <nav class="topbar-actions" aria-label="ទង់ប្រតិបត្តិ">
+            <!-- Connection status -->
+            <div id="connection-status" class="status-pill" role="status" aria-live="polite">
+                <span class="status-dot"></span>
+                <span id="connection-text">កំពុងភ្ជាប់...</span>
+            </div>
+
+            <!-- Sync group -->
+            <div class="action-group">
+                <button id="sheet-settings-btn" class="btn btn-ghost" type="button" title="Google Sheet Settings">
+                    <ion-icon name="grid-outline" aria-hidden="true"></ion-icon>
+                    <span>Sheet</span>
+                </button>
+                <button id="backup-now-btn" class="btn btn-ghost" type="button" title="Backup to Google Sheet">
+                    <ion-icon name="cloud-done-outline" aria-hidden="true"></ion-icon>
+                    <span>Backup</span>
+                </button>
+            </div>
+
+            <!-- Import/Export group -->
+            <div class="action-group">
+                <button id="download-template-btn" class="btn btn-ghost" type="button" title="Download Excel Template">
+                    <ion-icon name="document-text-outline" aria-hidden="true"></ion-icon>
+                    <span>គំរូ</span>
+                </button>
+                <button id="import-file-btn" class="btn btn-secondary" type="button" title="Import CSV/Excel">
+                    <ion-icon name="cloud-upload-outline" aria-hidden="true"></ion-icon>
+                    <span>Import</span>
+                </button>
+                <input id="import-file-input" class="hidden-input" type="file"
+                       accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel">
+            </div>
+
+            <!-- Output group -->
+            <div class="action-group">
+                <button id="print-list-btn" class="btn btn-ghost" type="button" title="Print Student List">
+                    <ion-icon name="print-outline" aria-hidden="true"></ion-icon>
+                    <span>Print</span>
+                </button>
+                <button id="download-csv-btn" class="btn btn-primary" type="button" title="Download CSV">
+                    <ion-icon name="download-outline" aria-hidden="true"></ion-icon>
+                    <span>CSV</span>
+                </button>
+                <button id="delete-all-btn" class="btn btn-danger" type="button" title="Delete all student records">
+                    <ion-icon name="trash-outline" aria-hidden="true"></ion-icon>
+                    <span>លុបទាំងអស់</span>
+                </button>
+            </div>
+
+            <!-- Theme toggle -->
+            <button id="theme-toggle" class="theme-btn" type="button" aria-label="Toggle dark mode">
+                <ion-icon class="icon-sun" name="sunny-outline"></ion-icon>
+                <ion-icon class="icon-moon" name="moon-outline"></ion-icon>
+            </button>
+        </nav>
+    </header>
+
+    <!-- ======================== METRICS ======================== -->
+    <section class="metrics" aria-label="ស្ថិតិសិស្ស">
+        <div class="metric metric-total">
+            <div class="metric-icon">
+                <ion-icon name="people-outline" aria-hidden="true"></ion-icon>
+            </div>
+            <div class="metric-body">
+                <div class="metric-label">សរុប</div>
+                <div id="total-students" class="metric-value">--</div>
+                <div class="metric-sub">សិស្សសរុប</div>
+            </div>
+        </div>
+        <div class="metric metric-male">
+            <div class="metric-icon">
+                <ion-icon name="man-outline" aria-hidden="true"></ion-icon>
+            </div>
+            <div class="metric-body">
+                <div class="metric-label">ប្រុស</div>
+                <div id="male-students" class="metric-value">--</div>
+                <div class="metric-sub">សិស្សប្រុស</div>
+            </div>
+        </div>
+        <div class="metric metric-female">
+            <div class="metric-icon">
+                <ion-icon name="woman-outline" aria-hidden="true"></ion-icon>
+            </div>
+            <div class="metric-body">
+                <div class="metric-label">ស្រី</div>
+                <div id="female-students" class="metric-value">--</div>
+                <div class="metric-sub">សិស្សស្រី</div>
+            </div>
+        </div>
+        <div class="metric metric-sync">
+            <div class="metric-icon">
+                <ion-icon name="time-outline" aria-hidden="true"></ion-icon>
+            </div>
+            <div class="metric-body">
+                <div class="metric-label">ធ្វើបច្ចុប្បន្នភាព</div>
+                <div id="last-sync" class="metric-value">--:--</div>
+                <div class="metric-sub">ចុងក្រោយ</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======================== MAIN LAYOUT ======================== -->
+    <div class="main-layout">
+
+        <!-- FORM PANEL -->
+        <section class="panel form-panel" id="form-panel" aria-label="ចុះឈ្មោះសិស្ស">
+            <div class="panel-header">
+                <div>
+                    <h2 id="form-title" class="panel-title">បញ្ចូលសិស្សថ្មី</h2>
+                    <p id="form-subtitle" class="panel-sub">ព័ត៌មានដែលមាន * ត្រូវតែបំពេញ</p>
+                </div>
+            </div>
+
+            <form id="registration-form" autocomplete="off" novalidate>
+                <input type="hidden" id="editing-id" value="">
+
+                <div class="form-body">
+
+                    <!-- Section: Student Info -->
+                    <div class="form-section">
+                        <div class="section-header" role="button" tabindex="0" aria-expanded="true"
+                             onclick="toggleSection(this)" onkeydown="if(event.key==='Enter')toggleSection(this)">
+                            <div class="section-icon"><ion-icon name="person-outline"></ion-icon></div>
+                            <span class="section-title">ព័ត៌មានសិស្ស</span>
+                            <span class="section-chevron"><ion-icon name="chevron-down-outline"></ion-icon></span>
+                        </div>
+                        <div class="section-body">
+                            <div class="field-grid">
+                                <div class="field field-full">
+                                    <label for="studentCode">លេខសម្គាល់សិស្ស</label>
+                                    <input id="studentCode" name="studentCode" type="text"
+                                           placeholder="បង្កើតស្វ័យប្រវត្តិ" readonly>
+                                </div>
+                                <div class="field field-full">
+                                    <label for="studentName" class="required">ឈ្មោះសិស្ស</label>
+                                    <input id="studentName" name="studentName" type="text" required
+                                           placeholder="ឈ្មោះពេញ">
+                                </div>
+                                <div class="field">
+                                    <label class="required">ភេទ</label>
+                                    <div class="gender-group" role="radiogroup" aria-label="ភេទ">
+                                        <label class="gender-opt">
+                                            <input type="radio" name="gender" value="ប្រុស" checked>
+                                            <span><ion-icon name="man-outline"></ion-icon>ប្រុស</span>
+                                        </label>
+                                        <label class="gender-opt">
+                                            <input type="radio" name="gender" value="ស្រី">
+                                            <span><ion-icon name="woman-outline"></ion-icon>ស្រី</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label for="dob" class="required">ថ្ងៃខែឆ្នាំកំណើត</label>
+                                    <input id="dob" name="dob" type="date" required>
+                                </div>
+                                <div class="field">
+                                    <label for="fatherName">ឈ្មោះឪពុក</label>
+                                    <input id="fatherName" name="fatherName" type="text" placeholder="ឪពុក">
+                                </div>
+                                <div class="field">
+                                    <label for="motherName">ឈ្មោះម្តាយ</label>
+                                    <input id="motherName" name="motherName" type="text" placeholder="ម្តាយ">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section: Birth Place -->
+                    <div class="form-section">
+                        <div class="section-header" role="button" tabindex="0" aria-expanded="true"
+                             onclick="toggleSection(this)" onkeydown="if(event.key==='Enter')toggleSection(this)">
+                            <div class="section-icon"><ion-icon name="location-outline"></ion-icon></div>
+                            <span class="section-title">ទីកន្លែងកំណើត</span>
+                            <span class="section-chevron"><ion-icon name="chevron-down-outline"></ion-icon></span>
+                        </div>
+                        <div class="section-body">
+                            <div class="field-grid">
+                                <div class="field">
+                                    <label for="pobProvince">ខេត្ត/រាជធានី</label>
+                                    <select id="pobProvince" name="pobProvince"></select>
+                                </div>
+                                <div class="field">
+                                    <label for="pobDistrict">ស្រុក/ខណ្ឌ</label>
+                                    <select id="pobDistrict" name="pobDistrict" disabled></select>
+                                </div>
+                                <div class="field">
+                                    <label for="pobCommune">ឃុំ/សង្កាត់</label>
+                                    <select id="pobCommune" name="pobCommune" disabled></select>
+                                </div>
+                                <div class="field">
+                                    <label for="pobVillage">ភូមិ</label>
+                                    <select id="pobVillage" name="pobVillage" disabled></select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section: Current Address -->
+                    <div class="form-section">
+                        <div class="section-header" role="button" tabindex="0" aria-expanded="true"
+                             onclick="toggleSection(this)" onkeydown="if(event.key==='Enter')toggleSection(this)">
+                            <div class="section-icon"><ion-icon name="home-outline"></ion-icon></div>
+                            <span class="section-title">អាសយដ្ឋានបច្ចុប្បន្ន</span>
+                            <span class="section-chevron"><ion-icon name="chevron-down-outline"></ion-icon></span>
+                        </div>
+                        <div class="section-body">
+                            <label class="check-row" for="same-address">
+                                <input id="same-address" type="checkbox">
+                                <span>ដូចទីកន្លែងកំណើត</span>
+                            </label>
+                            <div class="field-grid">
+                                <div class="field">
+                                    <label for="currentProvince">ខេត្ត/រាជធានី</label>
+                                    <select id="currentProvince" name="currentProvince"></select>
+                                </div>
+                                <div class="field">
+                                    <label for="currentDistrict">ស្រុក/ខណ្ឌ</label>
+                                    <select id="currentDistrict" name="currentDistrict" disabled></select>
+                                </div>
+                                <div class="field">
+                                    <label for="currentCommune">ឃុំ/សង្កាត់</label>
+                                    <select id="currentCommune" name="currentCommune" disabled></select>
+                                </div>
+                                <div class="field">
+                                    <label for="currentVillage">ភូមិ</label>
+                                    <select id="currentVillage" name="currentVillage" disabled></select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section: Academic -->
+                    <div class="form-section">
+                        <div class="section-header" role="button" tabindex="0" aria-expanded="true"
+                             onclick="toggleSection(this)" onkeydown="if(event.key==='Enter')toggleSection(this)">
+                            <div class="section-icon"><ion-icon name="book-outline"></ion-icon></div>
+                            <span class="section-title">ការសិក្សា និងទំនាក់ទំនង</span>
+                            <span class="section-chevron"><ion-icon name="chevron-down-outline"></ion-icon></span>
+                        </div>
+                        <div class="section-body">
+                            <div class="field-grid">
+                                <div class="field field-full">
+                                    <label for="fromSchool">សាលា</label>
+                                    <select id="fromSchool" name="fromSchool">
+                                        <option value="">ជ្រើសរើសសាលា</option>
+                                        <option value="បឋមព្រៃមេលង">បឋមព្រៃមេលង</option>
+                                        <option value="បឋមព្រៃម្លូ">បឋមព្រៃម្លូ</option>
+                                        <option value="បឋមអង្គសិរីម៉ាលី">បឋមអង្គសិរីម៉ាលី</option>
+                                        <option value="បឋមបន្ទាយធ្លាយ">បឋមបន្ទាយធ្លាយ</option>
+                                        <option value="បឋមព្រឹក្សា">បឋមព្រឹក្សា</option>
+                                        <option value="បឋមកែវកាំភ្លើង">បឋមកែវកាំភ្លើង</option>
+                                        <option value="បឋមទេពនិមិ្មត">បឋមទេពនិមិ្មត</option>
+                                        <option value="បឋមព្រៃបាយ">បឋមព្រៃបាយ</option>
+                                        <option value="បឋមអណ្តូងសំរិត">បឋមអណ្តូងសំរិត</option>
+                                        <option value="វិទ្យាល័យសុខអានព្រៃមេលង">វិទ្យាល័យសុខអានព្រៃមេលង</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="className">ថ្នាក់</label>
+                                    <input id="className" name="className" type="text" placeholder="ឧ. 7A">
+                                </div>
+                                <div class="field">
+                                    <label for="gpa">មធ្យមភាគ</label>
+                                    <input id="gpa" name="gpa" type="number" min="0" max="100" step="0.01" placeholder="85">
+                                </div>
+                                <div class="field field-full">
+                                    <label for="contact" class="required">លេខទូរស័ព្ទ</label>
+                                    <input id="contact" name="contact" type="tel" required placeholder="0xx-xxx-xxx">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- end .form-body -->
+
+                <!-- Sticky Save Bar -->
+                <div class="form-save-bar">
+                    <button id="save-student-btn" class="btn btn-primary btn-lg" type="submit">
+                        <ion-icon name="add-circle-outline" aria-hidden="true"></ion-icon>
+                        <span>រក្សាទុក</span>
+                    </button>
+                    <button id="clear-form-btn" class="btn btn-ghost btn-lg" type="button">
+                        <ion-icon name="refresh-outline" aria-hidden="true"></ion-icon>
+                        <span>សម្អាត</span>
+                    </button>
+                </div>
+
+                <div class="shortcuts-hint">
+                    <span><span class="kbd">Ctrl+Enter</span> រក្សាទុក</span>
+                    <span><span class="kbd">Esc</span> សម្អាត/បោះបង់</span>
+                </div>
+            </form>
+        </section>
+
+        <!-- STUDENTS LIST PANEL -->
+        <section class="panel" aria-label="បញ្ជីសិស្ស">
+            <div class="panel-header">
+                <div>
+                    <h2 class="panel-title">បញ្ជីសិស្ស</h2>
+                    <p id="result-summary" class="panel-sub">កំពុងផ្ទុកទិន្នន័យ...</p>
+                </div>
+            </div>
+
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div class="search-wrap">
+                    <ion-icon name="search-outline" aria-hidden="true"></ion-icon>
+                    <input id="search-input" type="search" placeholder="ស្វែងរកឈ្មោះ លេខ ទូរស័ព្ទ...">
+                </div>
+                <select id="gender-filter" aria-label="តម្រងភេទ">
+                    <option value="">ភេទទាំងអស់</option>
+                    <option value="ប្រុស">ប្រុស</option>
+                    <option value="ស្រី">ស្រី</option>
+                </select>
+                <select id="class-filter" aria-label="តម្រងថ្នាក់">
+                    <option value="">ថ្នាក់ទាំងអស់</option>
+                </select>
+                <select id="school-filter" aria-label="តម្រងសាលា">
+                    <option value="">សាលាទាំងអស់</option>
+                </select>
+            </div>
+
+            <!-- Desktop Table -->
+            <div class="table-wrap" role="region" aria-label="តារាងសិស្ស" tabindex="0">
+                <table>
+                    <thead>
+                        <tr>
+                            <th rowspan="2" style="width:40px; text-align:center; vertical-align:middle;">ល.រ</th>
+                            <th rowspan="2" style="width:90px; vertical-align:middle;">អត្តលេខ</th>
+                            <th rowspan="2" style="min-width:140px; vertical-align:middle;">គោត្តនាម-នាម</th>
+                            <th rowspan="2" style="width:60px; text-align:center; vertical-align:middle;">ភេទ</th>
+                            <th rowspan="2" style="width:100px; text-align:center; vertical-align:middle;">ថ្ងៃកំណើត</th>
+                            <th rowspan="2" style="width:70px; text-align:center; vertical-align:middle;">ថ្នាក់</th>
+                            <th rowspan="2" style="min-width:120px; vertical-align:middle;">សាលា</th>
+                            <th colspan="4" style="text-align:center; border-bottom:1px solid var(--border);">ទីកន្លែងកំណើត</th>
+                            <th rowspan="2" style="min-width:110px; vertical-align:middle;">លេខទូរស័ព្ទ</th>
+                            <th rowspan="2" style="min-width:100px; vertical-align:middle;">ឈ្មោះឪពុក</th>
+                            <th rowspan="2" style="min-width:100px; vertical-align:middle;">ឈ្មោះម្តាយ</th>
+                            <th colspan="4" style="text-align:center; border-bottom:1px solid var(--border);">អាសយដ្ឋានបច្ចុប្បន្ន</th>
+                            <th rowspan="2" style="width:80px; text-align:center; vertical-align:middle;">មធ្យមភាគ</th>
+                            <th rowspan="2" style="width:110px; text-align:center; vertical-align:middle;">សកម្មភាព</th>
+                        </tr>
+                        <tr>
+                            <th style="font-size:.78rem; text-align:center;">ភូមិ</th>
+                            <th style="font-size:.78rem; text-align:center;">ឃុំ/សង្កាត់</th>
+                            <th style="font-size:.78rem; text-align:center;">ស្រុក/ខណ្ឌ</th>
+                            <th style="font-size:.78rem; text-align:center;">ខេត្ត/ក្រុង</th>
+                            <th style="font-size:.78rem; text-align:center;">ភូមិ</th>
+                            <th style="font-size:.78rem; text-align:center;">ឃុំ/សង្កាត់</th>
+                            <th style="font-size:.78rem; text-align:center;">ស្រុក/ខណ្ឌ</th>
+                            <th style="font-size:.78rem; text-align:center;">ខេត្ត/ក្រុង</th>
+                        </tr>
+                    </thead>
+                    <tbody id="student-list">
+                        <tr class="skeleton-row">
+                            <td colspan="20">
+                                <div class="skeleton skeleton-line" style="width:60%;height:16px"></div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Mobile Cards -->
+            <div id="student-cards" class="cards-list" aria-label="Card view">
+                <div class="empty">
+                    <ion-icon name="hourglass-outline"></ion-icon>
+                    <p>កំពុងផ្ទុកទិន្នន័យ...</p>
+                </div>
+            </div>
+
+            <!-- Pager -->
+            <div class="pager" aria-label="Pagination">
+                <div id="page-info" class="pager-info">ទំព័រ 1</div>
+                <div class="pager-controls">
+                    <button id="prev-page-btn" class="btn btn-ghost btn-sm" type="button" aria-label="Previous page">
+                        <ion-icon name="chevron-back-outline"></ion-icon>
+                        <span>មុន</span>
+                    </button>
+                    <button id="next-page-btn" class="btn btn-ghost btn-sm" type="button" aria-label="Next page">
+                        <span>បន្ទាប់</span>
+                        <ion-icon name="chevron-forward-outline"></ion-icon>
+                    </button>
+                    <select id="page-size-select" class="pager-page-size" aria-label="Rows per page" style="width:auto;min-width:110px;height:30px;font-size:.82rem;">
+                        <option value="25">25 / ទំព័រ</option>
+                        <option value="50">50 / ទំព័រ</option>
+                        <option value="100">100 / ទំព័រ</option>
+                        <option value="0" selected>ទាំងអស់</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+    </div><!-- end .main-layout -->
+
+    <!-- Activity History -->
+    <section class="panel history-panel" aria-label="ប្រវត្តិសកម្មភាព">
+        <div class="panel-header">
+            <div>
+                <h2 class="panel-title">ប្រវត្តិសកម្មភាព</h2>
+                <p class="panel-sub">សកម្មភាព ២០ ចុងក្រោយ</p>
+            </div>
+        </div>
+        <div id="history-log" class="history-list" aria-live="polite">
+            <p class="empty" style="padding:16px">មិនទាន់មានសកម្មភាព...</p>
+        </div>
+    </section>
+
+</main><!-- end .app -->
+
+<!-- ======================== DELETE MODAL ======================== -->
+<div id="delete-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="delete-title">
+    <div class="modal-dialog">
+        <div class="modal-body">
+            <div class="modal-icon modal-icon-danger" aria-hidden="true">
+                <ion-icon name="warning-outline"></ion-icon>
+            </div>
+            <h2 id="delete-title" class="modal-title">លុបសិស្ស</h2>
+            <p class="modal-desc">
+                តើអ្នកប្រាកដចង់លុប <strong id="delete-student-name">សិស្សនេះ</strong> មែនទេ?
+                សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។
+            </p>
+        </div>
+        <div class="modal-footer">
+            <button id="cancel-delete-btn" class="btn btn-ghost" type="button">បោះបង់</button>
+            <button id="confirm-delete-btn" class="btn btn-danger" type="button">
+                <ion-icon name="trash-outline" aria-hidden="true"></ion-icon>
+                <span>លុបចោល</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== DELETE ALL MODAL ======================== -->
+<div id="delete-all-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="delete-all-title">
+    <div class="modal-dialog">
+        <div class="modal-body">
+            <div class="modal-icon modal-icon-danger" aria-hidden="true">
+                <ion-icon name="warning-outline"></ion-icon>
+            </div>
+            <h2 id="delete-all-title" class="modal-title">លុបទិន្នន័យទាំងអស់</h2>
+            <p class="modal-desc">
+                តើអ្នកប្រាកដចង់លុបទិន្នន័យសិស្សទាំងអស់ <strong id="delete-all-count">0</strong> នាក់ មែនទេ?
+                សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។
+            </p>
+        </div>
+        <div class="modal-footer">
+            <button id="cancel-delete-all-btn" class="btn btn-ghost" type="button">បោះបង់</button>
+            <button id="confirm-delete-all-btn" class="btn btn-danger" type="button">
+                <ion-icon name="trash-outline" aria-hidden="true"></ion-icon>
+                <span>លុបទាំងអស់</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== GOOGLE SHEET MODAL ======================== -->
+<div id="sheet-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <div class="modal-dialog">
+        <div class="modal-body">
+            <div class="modal-icon modal-icon-primary" aria-hidden="true">
+                <ion-icon name="grid-outline"></ion-icon>
+            </div>
+            <h2 id="sheet-title" class="modal-title">ភ្ជាប់ Google Sheet</h2>
+            <p class="modal-desc">
+                បញ្ចូល Apps Script Web App URL ដើម្បី sync ទិន្នន័យ add/update/delete/backup ទៅ Google Sheet។
+            </p>
+            <div class="field" style="margin-top:16px">
+                <label for="sheet-url-input">Apps Script Web App URL</label>
+                <input id="sheet-url-input" type="url"
+                       placeholder="https://script.google.com/macros/s/.../exec"
+                       style="margin-top:4px">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="clear-sheet-url-btn" class="btn btn-ghost" type="button">សម្អាត URL</button>
+            <button id="cancel-sheet-url-btn" class="btn btn-ghost" type="button">បោះបង់</button>
+            <button id="save-sheet-url-btn" class="btn btn-primary" type="button">
+                <ion-icon name="save-outline" aria-hidden="true"></ion-icon>
+                <span>រក្សាទុក</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== TOAST CONTAINER ======================== -->
+<div id="toast-container" class="toast-container" aria-live="assertive" aria-atomic="true"></div>
+
+<!-- ======================== SCRIPTS ======================== -->
+<script>
+    // ===================== THEME TOGGLE =====================
+    (function() {
+        const saved = localStorage.getItem('studentAppTheme') || 'light';
+        document.documentElement.setAttribute('data-theme', saved);
+    })();
+
+    function toggleSection(header) {
+        const section = header.closest('.form-section');
+        section.classList.toggle('section-collapsed');
+        header.setAttribute('aria-expanded', !section.classList.contains('section-collapsed'));
+    }
+</script>
+
+<script type="module">
+    const LOCAL_STUDENTS_KEY = "studentRegistrationOfflineStudents";
+    const LOCAL_HISTORY_KEY  = "studentRegistrationOfflineHistory";
+    const DEFAULT_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxusXYk2wISGmhKvCr4YX3BIuEZ5f-QqDSGSP-5AFqp5CPOaj1mBNpmBM4XVGCdYXHf/exec";
+    const GOOGLE_SCRIPT_STORAGE_KEY  = "studentRegistrationGoogleScriptUrl";
+    const BACKUP_TIME_STORAGE_KEY    = "studentRegistrationLastBackupAt";
+    const STUDENT_CODE_PREFIX        = "STU";
+
+    // ===================== LOCAL STORAGE DB HANDLERS =====================
+    function loadFromLocalStorage() {
+        try {
+            const data = localStorage.getItem(LOCAL_STUDENTS_KEY);
+            return data ? JSON.parse(data) : [];
+        } catch (e) {
+            console.error("Error loading students from localStorage:", e);
+            return [];
+        }
+    }
+
+    function saveToLocalStorage(students) {
+        try {
+            localStorage.setItem(LOCAL_STUDENTS_KEY, JSON.stringify(students));
+        } catch (e) {
+            console.error("Error saving students to localStorage:", e);
+            showToast("រក្សាទុកក្នុង Local Storage បរាជ័យ", "error");
+        }
+    }
+
+    function loadHistoryFromLocalStorage() {
+        try {
+            const data = localStorage.getItem(LOCAL_HISTORY_KEY);
+            return data ? JSON.parse(data) : [];
+        } catch (e) {
+            console.error("Error loading history from localStorage:", e);
+            return [];
+        }
+    }
+
+    function saveHistoryToLocalStorage(history) {
+        try {
+            localStorage.setItem(LOCAL_HISTORY_KEY, JSON.stringify(history));
+        } catch (e) {
+            console.error("Error saving history to localStorage:", e);
+        }
+    }
+
+    // ===================== CAMBODIA ADDRESS DATA =====================
+    const cambodiaData = {
+        "ខេត្តបន្ទាយមានជ័យ": {
+            "ស្រុកឧនណ": { "ប្លុកក្រវ៉ាន់": ["ស្ទឹងជ្រៃ","ក្រវ៉ាន់","សសរ"], "ប្លុកថ្មី": ["ថ្មី","ស្ទឹងអត"] },
+            "ស្រុកភ្នំស្រក់": { "ភ្នំស្រក់": ["ភ្នំស្រក់","បន្ទាយ"], "ត្រាំ": ["ត្រាំ","ករខ"] },
+            "ក្រុងសៀមរាប": { "ស្វាយដង្គំ": ["ស្វាយ","ដង្គំ"], "ស្លក្រាម": ["ស្លក្រាម","អន្លង់"] }
+        },
+        "ខេត្តបាត់ដំបង": {
+            "ក្រុងបាត់ដំបង": {
+                "ព្រៃធំ": ["ព្រៃធំ","ត្រពាំង","ព្រៃ"],
+                "ស្វាយប៉ោ": ["ស្វាយប៉ោ","ទួល"],
+                "វាល": ["វាល","ទីក្រុង"]
+            },
+            "ស្រុកអេករ": { "អេករ": ["អេករ","ត្រពាំង","ហ៊ីង"] },
+            "ស្រុកថ្មគោល": { "ថ្មគោល": ["ថ្មគោល","ព្រៃ","ទួល"] }
+        },
+        "ខេត្តកំពង់ចាម": {
+            "ក្រុងកំពង់ចាម": {
+                "វត្តភ្នំ": ["វត្តភ្នំ","ក្រលា","ក្ដីស"],
+                "ធំ": ["ធំ","ការសៀ","ដែល"],
+                "ពោ": ["ពោ","ស្ទឹង"]
+            },
+            "ស្រុកស្ទឹងត្រង": { "ស្ទឹងត្រង": ["ស្ទឹងត្រង","ត្រពាំង"] },
+            "ស្រុកចេងព្រៃ": { "ចេងព្រៃ": ["ចេងព្រៃ","បូករ","ចំប"] }
+        },
+        "ខេត្តកណ្ដាល": {
+            "ស្រុកខសាច់": {
+                "ខសាច់": ["ខសាច់","អ្នកលូ","ព្រែក"],
+                "ព្រែកហ្ស": ["ព្រែកហ្ស","ដូង","ព្រៃ"]
+            },
+            "ស្រុកស្អាង": { "ស្អាង": ["ស្អាង","ចេងគ","ក្រោម"] },
+            "ស្រុកទ្បានខ្ញី": { "ទ្បានខ្ញី": ["ទ្បានខ្ញី","អូរ"] }
+        },
+        "ខេត្តកំពង់ស្ពឺ": {
+            "ក្រុងកំពង់ស្ពឺ": { "ស្ពឺ": ["ស្ពឺ","ទួល","ច"] },
+            "ស្រុកចៅខ្លុង": { "ចៅខ្លុង": ["ចៅខ្លុង","ក្រ","ដំ"] },
+            "ស្រុកថ្នាល": { "ថ្នាល": ["ថ្នាល","ព្រៃ","ឃ"] }
+        },
+        "ខេត្តកំពង់ធំ": {
+            "ក្រុងស្ទឹងសែន": { "ស្ទឹងសែន": ["ស្ទឹងសែន","ពោ","ដូង"] },
+            "ស្រុកប្រាសាទបាលាយ": { "ប្រាសាទ": ["ប្រាសាទ","ស","ប"] }
+        },
+        "ខេត្តកំពត": {
+            "ក្រុងកំពត": { "ស្ទឹង": ["ស្ទឹង","ព្រ","ខ"] },
+            "ស្រុកចំការ": { "ចំការ": ["ចំការ","ដូ","ព"] }
+        },
+        "ខេត្តព្រះសីហនុ": {
+            "ក្រុងព្រះសីហនុ": { "ក្រោមអក": ["ក្រោមអក","ខាងជើង","ខាងត្បូង"] },
+            "ស្រុកព្រៃនប់": { "ព្រៃនប់": ["ព្រៃនប់","ព"] }
+        },
+        "ខេត្តក្រចេះ": {
+            "ក្រុងក្រចេះ": { "ស": ["ស","ព","ក"] },
+            "ស្រុកស្នួល": { "ស្នួល": ["ស្នួល","ព","ស"] }
+        },
+        "ខេត្តមណ្ឌលគិរី": {
+            "ក្រុងសែនមនោរម្យ": { "ស": ["ស","ព","ម"] },
+            "ស្រុកបូ": { "បូ": ["បូ","ម"] }
+        },
+        "ខេត្តព្រះវិហារ": {
+            "ស្រុកចេងគ": { "ចេងគ": ["ចេងគ","ព","ក"] },
+            "ស្រុករំទឹក": { "រំទឹក": ["រំទឹក","ស"] }
+        },
+        "ខេត្តព្រៃវែង": {
+            "ក្រុងព្រៃវែង": { "ព្រៃ": ["ព្រៃ","ឈើ","ដ"] },
+            "ស្រុកព្រៃ": { "ព្រៃ": ["ព្រៃ","ស"] }
+        },
+        "ខេត្តរតនគិរី": {
+            "ក្រុងបានលុង": { "បា": ["បា","ន","ល"] },
+            "ស្រុកលំផាត់": { "លំ": ["លំ","ផ"] }
+        },
+        "ខេត្តសៀមរាប": {
+            "ក្រុងសៀមរាប": {
+                "ស្វាយដង្គំ": ["ស្វាយ","ដង្គំ","ប"],
+                "ស្លក្រាម": ["ស្លក្រាម","ព","ស"],
+                "ការ": ["ការ","ស","ព"]
+            },
+            "ស្រុកសូទ្រានិគម": { "សូ": ["សូ","ត","ន"] },
+            "ស្រុកអង្គរធំ": { "អ": ["អ","ង"] }
+        },
+        "ខេត្តស្ទឹងត្រែង": {
+            "ក្រុងស្ទឹងត្រែង": { "ស": ["ស","ទ","ត"] },
+            "ស្រុកសំបូ": { "ស": ["ស","ំ"] }
+        },
+        "ខេត្តស្វាយរៀង": {
+            "ក្រុងស្វាយរៀង": { "ស": ["ស","វ","រ"] },
+            "ស្រុកចន្ទ្រា": { "ចន": ["ចន","ទ"] }
+        },
+        "ខេត្តតាកែវ": {
+            "ក្រុងដូនកែវ": {
+                "បារាយណ៍": ["បារាយណ៍","ដើមផ្ដៀក","ព្រៃព្រិច","ព្រៃខ្លា","ត្រពាំងសាលា","ឡូរី","ជ្រោយ","ស្នោ"],
+                "រកាក្នុង": ["រកាក្នុងទី១","រកាក្នុងទី២","អូរុន","ចំការសំរោង","ធ្នង់","សុភី","ត្រពាំងសាប"],
+                "រកាក្រៅ": ["រកាក្រៅ","ថ្មី","តាឌុក","តាដោ","ត្រាំ","ប្រហូត"]
+            },
+            "ស្រុកបាទី": {
+                "ចំបក់": ["រលួស","ត្រពាំងលើក","ព្រៃរំពាក់","ត្រពាំងក្រឡាញ់","ត្រពាំងឈូក","ត្រពាំងកក់","ព្រៃជន្លួញ","ត្រពាំងធំ","ត្រពាំងព្រិច","ថ្មី","ក្រាំងអំពិល"],
+                "ចំប៉ី": ["ចំប៉ី","ព្រៃផ្គាំ","កក់","ស្រែឫស្សី","ត្រពាំងឈូក","ថ្មី","ត្រពាំងរាំង","ត្រពាំងរនៀម","ត្រពាំងទា","ព្រៃមូល"]
+            },
+            "ស្រុកកោះអណ្តែត": {
+                "រមេញ": ["រមេញខាងត្បូង","រមេញខាងជើង","ដើមចាន់","មានរិទ្ធ","ដើមជ្រៃ","ប្រឡាយមាស","បត់រកា","សំរោង","ប្រាសាទ","ដើមពោធិ៍"],
+                "ពេជសារ": ["តាអូរ","ជន្លូស","ទួលមាស","ព្រៃធំ","ដំណាក់","ត្របាយ","កោះអណ្ដែត","ក្រាំង","តាអោក","ពោធិ៍","ពាន","តាសៅ","សិលា","ស្នែ","ចុងអន្ទង","អង្គញ់","តាប៉ិ","កោះខ្ទម"],
+                "ព្រៃខ្លា": ["ស្រម៉","ស្រែបឹង","ព្រៃមេលងខាងត្បូង","ព្រៃមេលងខាងជើង","កន្សោមអក","ចំបក់","សំភ្លី","គរ","ក្រាំងប្ញស្សី","ព្រៃខ្លាខាងជើង","ព្រៃខ្លាខាងត្បូង","បន្ទាយធ្លាយ","កែវកាំភ្លើង","ទួលកណ្តាល","ជំរុំ"],
+                "ក្រពុំឈូក": ["ដើមដូង","បេង","ក្រពុំឈូក","ព្រៃម្លូ","ពានី","តាពរ","តាអ៊ុយ","កោះមាន់","វត្តស្លា","ជ្រោយពោន","ខ្លាគ្រហឹម ក","ខ្លាគ្រហឹម ខ","ត្រពាំងទនេ្ល"],
+                "គោកធ្លក": ["គោកធ្លក","ត្រពាំងឈូក","ត្រពាំងក្រសាំង","ត្រពាំងប្រិយ៍","ព្រៃរនាម","ព្រៃរោង","ត្រពាំងស្យា","ត្រពាំងត្នោត","ត្រពាំងវែង"],
+                "កំពែង": ["កំពែង","ទួលស្បូវ","ត្រពាំងឈូក","ត្រពាំងក្រសាំង","ព្រៃរនាម","ព្រៃរោង"]
+            },
+            "ស្រុកព្រៃកប្បាស": {
+                "អង្កាញ់": ["អង្កាញ់","ត្រពាំងធ្នង់","ព្រៃបាយ","តាអាំ","ត្រពាំងខ្ទុំ","ត្រពាំងក្ដុល","ត្រពាំងរំដេញ","តាអ៊ុយ"],
+                "បានៀវ": ["បានៀវ","ព្រៃកប្បាស","គោកទ្រា","ព្រៃវិហារ","ព្រៃចំបក់","ត្រពាំងស្មៅ"],
+                "ចំប៉ា": ["ចំប៉ា","ព្រៃផ្អាវ","ត្រពាំងអង្គ","ក្រាំងឈើនៀង","ត្រពាំងធំ","តានប់"],
+                "ចារ": ["ចារ","សេរីវង្ស","ព្រៃក្ដី","ត្រពាំងសង្កែ","ព្រៃរំពាក់"],
+                "កំពែង": ["កំពែង","ទួលស្បូវ","ត្រពាំងឈូក","ត្រពាំងក្រសាំង","ព្រៃរនាម","ព្រៃរោង"],
+                "កំពង់រាប": ["កំពង់រាប","ព្រែកហាប","ព្រែកអាំ","ព្រែកយួន"],
+                "ព្រៃផ្តៅ": ["តាឌឹម","ត្រពោន","តាជិន","តាចាន់","តារៀន","ពងអណ្ដើក"],
+                "ព្រៃល្វា": ["ព្រៃល្វា","ត្រពាំងក្ដី","ត្រពាំងខ្យង","ត្រពាំងឈូក","ត្រពាំងស្មៅ"],
+                "ស្នោ": ["ស្នោ","ព្រៃមាស","ត្រពាំងខ្នារ","ត្រពាំងជ្រៃ","ត្រពាំងទា"],
+                "តាំងយ៉ាប": ["តាំងយ៉ាប","ត្រពាំងខ្ទុំ","ព្រៃធំ","ត្រពាំងក្រូច","ព្រៃទទឹង"]
+            }
+        },
+        "ខេត្តឧត្តរមានជ័យ": {
+            "ស្រុកអន្លង់វែង": { "អន្លង់": ["អន្លង់","ព","ស"] },
+            "ស្រុកសំបូប្រាំ": { "ស": ["ស","ំ","ប"] }
+        },
+        "ខេត្តជ្រៃ": {
+            "ក្រុងជ្រៃ": { "ជ": ["ជ","្រ"] },
+            "ស្រុកស្ទឹងជ្រៃ": { "ស": ["ស","ទ"] }
+        },
+        "ខេត្តកែប": {
+            "ក្រុងកែប": { "ក": ["ក","ែ"] }
+        },
+        "ខេត្តប៉ៃលិន": {
+            "ក្រុងប៉ៃលិន": { "ប": ["ប","ៃ"] }
+        },
+        "រាជធានីភ្នំពេញ": {
+            "ខណ្ឌចំការមន": {
+                "ទួលទំពូង១": ["ចំការ","ទំពូង","ស"],
+                "ទួលទំពូង២": ["ទំពូង","ក","ម"],
+                "ផ្ការ": ["ផ្ការ","ស"]
+            },
+            "ខណ្ឌដូនពេញ": {
+                "ជ្រោយចង្វារ": ["ជ្រោយ","ចង្វារ"],
+                "ប្ដុំ": ["ប្ដុំ","ព"]
+            },
+            "ខណ្ឌបឹងកេងកង": { "បឹងកេងកង": ["បឹង","ស"] },
+            "ខណ្ឌបឹងក្យូ": { "ក": ["ក","យ"] },
+            "ខណ្ឌ៧មករា": { "ស": ["ស","ម"] },
+            "ខណ្ឌឫស្សីកែវ": { "ឫ": ["ឫ","ស"] },
+            "ខណ្ឌសែនសុខ": { "ស": ["ស","ន"] },
+            "ខណ្ឌព្រែកព្នៅ": { "ព": ["ព","្រ"] },
+            "ខណ្ឌបោរ": { "ស": ["ស","ប"] },
+            "ខណ្ឌព្រះស្ទីង": { "ព": ["ព","្រ"] }
+        }
+    };
+
+    // ===================== ELEMENT REFS =====================
+    const els = {
+        status: document.getElementById("connection-status"),
+        statusText: document.getElementById("connection-text"),
+        totalStudents: document.getElementById("total-students"),
+        maleStudents: document.getElementById("male-students"),
+        femaleStudents: document.getElementById("female-students"),
+        lastSync: document.getElementById("last-sync"),
+        backupNowBtn: document.getElementById("backup-now-btn"),
+        registrationForm: document.getElementById("registration-form"),
+        editingId: document.getElementById("editing-id"),
+        formPanel: document.getElementById("form-panel"),
+        formTitle: document.getElementById("form-title"),
+        formSubtitle: document.getElementById("form-subtitle"),
+        saveBtn: document.getElementById("save-student-btn"),
+        clearBtn: document.getElementById("clear-form-btn"),
+        sameAddress: document.getElementById("same-address"),
+        studentList: document.getElementById("student-list"),
+        studentCards: document.getElementById("student-cards"),
+        resultSummary: document.getElementById("result-summary"),
+        searchInput: document.getElementById("search-input"),
+        genderFilter: document.getElementById("gender-filter"),
+        classFilter: document.getElementById("class-filter"),
+        schoolFilter: document.getElementById("school-filter"),
+        pageInfo: document.getElementById("page-info"),
+        prevPageBtn: document.getElementById("prev-page-btn"),
+        nextPageBtn: document.getElementById("next-page-btn"),
+        pageSizeSelect: document.getElementById("page-size-select"),
+        fromSchool: document.getElementById("fromSchool"),
+        historyLog: document.getElementById("history-log"),
+        sheetSettingsBtn: document.getElementById("sheet-settings-btn"),
+        sheetModal: document.getElementById("sheet-modal"),
+        sheetUrlInput: document.getElementById("sheet-url-input"),
+        clearSheetUrlBtn: document.getElementById("clear-sheet-url-btn"),
+        cancelSheetUrlBtn: document.getElementById("cancel-sheet-url-btn"),
+        saveSheetUrlBtn: document.getElementById("save-sheet-url-btn"),
+        downloadTemplateBtn: document.getElementById("download-template-btn"),
+        importFileBtn: document.getElementById("import-file-btn"),
+        importFileInput: document.getElementById("import-file-input"),
+        printListBtn: document.getElementById("print-list-btn"),
+        downloadCsvBtn: document.getElementById("download-csv-btn"),
+        deleteAllBtn: document.getElementById("delete-all-btn"),
+        deleteModal: document.getElementById("delete-modal"),
+        deleteStudentName: document.getElementById("delete-student-name"),
+        confirmDeleteBtn: document.getElementById("confirm-delete-btn"),
+        cancelDeleteBtn: document.getElementById("cancel-delete-btn"),
+        deleteAllModal: document.getElementById("delete-all-modal"),
+        deleteAllCount: document.getElementById("delete-all-count"),
+        confirmDeleteAllBtn: document.getElementById("confirm-delete-all-btn"),
+        cancelDeleteAllBtn: document.getElementById("cancel-delete-all-btn"),
+        toastContainer: document.getElementById("toast-container"),
+        themeToggle: document.getElementById("theme-toggle")
+    };
+
+    const pobGroup = {
+        province: document.getElementById("pobProvince"),
+        district: document.getElementById("pobDistrict"),
+        commune: document.getElementById("pobCommune"),
+        village: document.getElementById("pobVillage")
+    };
+
+    const currentGroup = {
+        province: document.getElementById("currentProvince"),
+        district: document.getElementById("currentDistrict"),
+        commune: document.getElementById("currentCommune"),
+        village: document.getElementById("currentVillage")
+    };
+
+    // ===================== STATE =====================
+    let allStudents = [];
+    let filteredStudents = [];
+    let visibleStudents = [];
+    let totalStudentsCount = 0;
+    let pageSize = 0; // 0 = show all
+    let currentPageIndex = 0;
+    let hasNextPage = false;
+    let isLoadingPage = false;
+    let studentToDeleteId = null;
+
+    const fieldIds = [
+        "studentCode","studentName","dob","fatherName","motherName",
+        "pobProvince","pobDistrict","pobCommune","pobVillage",
+        "currentProvince","currentDistrict","currentCommune","currentVillage",
+        "fromSchool","className","gpa","contact"
+    ];
+
+    const STUDENT_TEMPLATE_TOP_HEADERS = [
+        "អត្តលេខ", "គោត្តនាម-នាម", "ភេទ", "ថ្ងៃកំណើត", "ថ្នាក់", "សាលា",
+        "ទីកន្លែងកំណើត", "", "", "", "លេខទូរស័ព្ទ", "ឈ្មោះឪពុក", "ឈ្មោះម្តាយ",
+        "អាសយដ្ឋានបច្ចុប្បន្ន", "", "", "", "មធ្យមភាគ"
+    ];
+    const STUDENT_TEMPLATE_SUB_HEADERS = [
+        "", "", "", "", "", "", "ភូមិ", "ឃុំ/សង្កាត់", "ស្រុក/ខណ្ឌ", "ខេត្ត/ក្រុង",
+        "", "", "", "ភូមិ", "ឃុំ/សង្កាត់", "ស្រុក/ខណ្ឌ", "ខេត្ត/ក្រុង", ""
+    ];
+    const STUDENT_CSV_HEADERS = [
+        "អត្តលេខ", "គោត្តនាម-នាម", "ភេទ", "ថ្ងៃកំណើត", "ថ្នាក់", "សាលា",
+        "ទីកន្លែងកំណើត - ភូមិ", "ទីកន្លែងកំណើត - ឃុំ/សង្កាត់",
+        "ទីកន្លែងកំណើត - ស្រុក/ខណ្ឌ", "ទីកន្លែងកំណើត - ខេត្ត/ក្រុង",
+        "លេខទូរស័ព្ទ", "ឈ្មោះឪពុក", "ឈ្មោះម្តាយ",
+        "អាសយដ្ឋានបច្ចុប្បន្ន - ភូមិ", "អាសយដ្ឋានបច្ចុប្បន្ន - ឃុំ/សង្កាត់",
+        "អាសយដ្ឋានបច្ចុប្បន្ន - ស្រុក/ខណ្ឌ", "អាសយដ្ឋានបច្ចុប្បន្ន - ខេត្ត/ក្រុង",
+        "មធ្យមភាគ"
+    ];
+    const STUDENT_IMPORT_FIELDS = [
+        "studentCode", "studentName", "gender", "dob", "className", "fromSchool",
+        "pobVillage", "pobCommune", "pobDistrict", "pobProvince",
+        "contact", "fatherName", "motherName",
+        "currentVillage", "currentCommune", "currentDistrict", "currentProvince", "gpa"
+    ];
+    const STUDENT_TEMPLATE_EXAMPLE = [
+        "", "(ឧ.) ហ៊ុន ណារ", "ប្រុស", "15/05/2010", "7A", "សាលាបឋមសិក្សាព្រៃខ្លា",
+        "ព្រៃមេលងខាងជើង", "ព្រៃខ្លា", "ស្រុកកោះអណ្តែត", "ខេត្តតាកែវ",
+        "012345678", "ហ៊ុន សក្កដា", "គង់ សុភី",
+        "ព្រៃមេលងខាងជើង", "ព្រៃខ្លា", "ស្រុកកោះអណ្តែត", "ខេត្តតាកែវ", "85"
+    ];
+    const STUDENT_TEMPLATE_MERGES = [
+        { s: { r: 3, c: 0 }, e: { r: 4, c: 0 } },
+        { s: { r: 3, c: 1 }, e: { r: 4, c: 1 } },
+        { s: { r: 3, c: 2 }, e: { r: 4, c: 2 } },
+        { s: { r: 3, c: 3 }, e: { r: 4, c: 3 } },
+        { s: { r: 3, c: 4 }, e: { r: 4, c: 4 } },
+        { s: { r: 3, c: 5 }, e: { r: 4, c: 5 } },
+        { s: { r: 3, c: 6 }, e: { r: 3, c: 9 } },
+        { s: { r: 3, c: 10 }, e: { r: 4, c: 10 } },
+        { s: { r: 3, c: 11 }, e: { r: 4, c: 11 } },
+        { s: { r: 3, c: 12 }, e: { r: 4, c: 12 } },
+        { s: { r: 3, c: 13 }, e: { r: 3, c: 16 } },
+        { s: { r: 3, c: 17 }, e: { r: 4, c: 17 } }
+    ];
+    const STUDENT_TEMPLATE_COLS = [
+        {wch:15}, {wch:22}, {wch:10}, {wch:15}, {wch:10}, {wch:22},
+        {wch:16}, {wch:16}, {wch:16}, {wch:16}, {wch:15}, {wch:18},
+        {wch:18}, {wch:16}, {wch:16}, {wch:16}, {wch:16}, {wch:12}
+    ];
+
+    // ===================== UTILITY =====================
+    const escMap = { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" };
+    function esc(v) { return String(v ?? "").replace(/[&<>"']/g, c => escMap[c]); }
+    function getValue(id) { return document.getElementById(id).value.trim(); }
+    function setValue(id, v) { document.getElementById(id).value = v || ""; }
+    function tsMillis(v) {
+        if (!v) return 0;
+        if (typeof v.toMillis === "function") return v.toMillis();
+        if (typeof v === "object" && typeof v.seconds === "number") return v.seconds * 1000;
+        if (v instanceof Date) return v.getTime();
+        const t = Date.parse(v);
+        return isNaN(t) ? 0 : t;
+    }
+
+    function formatDate(v) {
+        if (!v) return "";
+        const p = String(v).split("-");
+        return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : v;
+    }
+
+    function normDate(v) {
+        if (!v) return "";
+        if (v instanceof Date && !isNaN(v)) return v.toISOString().slice(0,10);
+        if (typeof v === "number" && isFinite(v)) {
+            const d = new Date(Math.round((v - 25569) * 86400 * 1000));
+            return isNaN(d) ? "" : d.toISOString().slice(0,10);
+        }
+        const t = String(v).trim();
+        const m1 = t.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+        if (m1) return `${m1[1]}-${m1[2].padStart(2,"0")}-${m1[3].padStart(2,"0")}`;
+        const m2 = t.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$/);
+        if (m2) { const y = m2[3].length===2 ? `20${m2[3]}` : m2[3]; return `${y}-${m2[2].padStart(2,"0")}-${m2[1].padStart(2,"0")}`; }
+        return t;
+    }
+
+    function normText(v) { return String(v||"").trim().toLocaleLowerCase("km-KH").replace(/\s+/g,""); }
+    function normPhone(v) { const d=String(v||"").replace(/\D/g,""); return d.startsWith("855")?`0${d.slice(3)}`:d; }
+
+    function normGender(v) {
+        const t = String(v||"").trim().toLowerCase();
+        if (!t) return "";
+        if (["ស្រី","female","f"].includes(t)) return "ស្រី";
+        if (["ប្រុស","male","m"].includes(t)) return "ប្រុស";
+        return String(v||"").trim();
+    }
+
+    function studentVisibleId(s={}) { return s.studentCode || s.studentId || ""; }
+    function studentDisplayId(s={}, fb="") { return s.studentCode || s.studentId || fb || s.id || ""; }
+
+    function addressText(s, prefix) {
+        return [s[`${prefix}Village`],s[`${prefix}Commune`],s[`${prefix}District`],s[`${prefix}Province`]].filter(Boolean).join(", ");
+    }
+
+    function studentExportValues(s) {
+        return [
+            studentVisibleId(s), s.studentName, s.gender, formatDate(s.dob), s.className, s.fromSchool,
+            s.pobVillage, s.pobCommune, s.pobDistrict, s.pobProvince,
+            s.contact, s.fatherName, s.motherName,
+            s.currentVillage, s.currentCommune, s.currentDistrict, s.currentProvince, s.gpa
+        ];
+    }
+
+    function formatDateTime(v) {
+        if (!v) return "មិនទាន់មាន";
+        const d = v instanceof Date ? v : new Date(v);
+        return isNaN(d) ? "មិនទាន់មាន" : d.toLocaleString("km-KH");
+    }
+
+    function formatTime(d = new Date()) {
+        return d.toLocaleTimeString("km-KH", { hour:"2-digit", minute:"2-digit" });
+    }
+
+    // ===================== TOAST =====================
+    function showToast(msg, type = "success") {
+        const iconByType = { success:"checkmark-circle-outline", error:"alert-circle-outline", warning:"warning-outline" };
+        const toast = document.createElement("div");
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `<ion-icon name="${iconByType[type]||iconByType.success}"></ion-icon><span class="toast-msg">${esc(msg)}</span>`;
+        els.toastContainer.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.add("leaving");
+            setTimeout(() => toast.remove(), 320);
+        }, 3500);
+    }
+
+    // ===================== STATUS =====================
+    function setStatus(text, state = "") {
+        els.status.className = `status-pill ${state}`.trim();
+        els.statusText.textContent = text;
+    }
+
+    // ===================== GOOGLE SHEET =====================
+    function getGoogleScriptUrl() { return localStorage.getItem(GOOGLE_SCRIPT_STORAGE_KEY) || DEFAULT_GOOGLE_SCRIPT_URL; }
+
+    function openSheetModal() {
+        els.sheetUrlInput.value = getGoogleScriptUrl();
+        els.sheetModal.classList.add("is-open");
+        els.sheetUrlInput.focus();
+    }
+    function closeSheetModal() { els.sheetModal.classList.remove("is-open"); }
+
+    function saveSheetUrl() {
+        const v = els.sheetUrlInput.value.trim();
+        if (!v) {
+            localStorage.removeItem(GOOGLE_SCRIPT_STORAGE_KEY);
+            closeSheetModal();
+            showToast("បានប្រើ URL ដើម");
+            return;
+        }
+        if (!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/i.test(v)) {
+            showToast("URL ត្រូវតែជា Apps Script URL ដែលបញ្ចប់ /exec", "warning");
+            return;
+        }
+        localStorage.setItem(GOOGLE_SCRIPT_STORAGE_KEY, v);
+        closeSheetModal();
+        showToast("បានរក្សាទុក Google Sheet URL");
+    }
+
+    async function syncGoogleSheet(action, student={}, studentId="", students=null) {
+        const url = getGoogleScriptUrl();
+        if (!url) return;
+        try {
+            const body = { action, studentId, student: {...student, studentId}, sentAt: new Date().toISOString() };
+            if (Array.isArray(students)) {
+                body.students = students.map(i => ({ studentId: studentDisplayId(i, i.id), student: {...i, studentId: studentDisplayId(i,i.id)} }));
+            }
+            await fetch(url, { method:"POST", mode:"no-cors", cache:"no-cache", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(body), redirect:"follow" });
+            if (["upsert","delete","backup"].includes(action)) {
+                localStorage.setItem(BACKUP_TIME_STORAGE_KEY, new Date().toISOString());
+            }
+        } catch(e) {
+            console.error("Google Sheet sync error:", e);
+        }
+    }
+
+    // ===================== ADDRESS CASCADE =====================
+    function populateSelect(sel, items, placeholder, selected="") {
+        const vals = [...new Set((items||[]).filter(Boolean))];
+        if (selected && !vals.includes(selected)) vals.push(selected);
+        sel.innerHTML = "";
+        sel.append(new Option(placeholder, ""));
+        vals.forEach(v => sel.append(new Option(v, v)));
+        sel.value = selected || "";
+    }
+
+    function resetAddressGroup(g) {
+        populateSelect(g.province, Object.keys(cambodiaData), "ជ្រើសរើសខេត្ត/រាជធានី");
+        populateSelect(g.district, [], "ជ្រើសរើសស្រុក/ខណ្ឌ");
+        populateSelect(g.commune, [], "ជ្រើសរើសឃុំ/សង្កាត់");
+        populateSelect(g.village, [], "ជ្រើសរើសភូមិ");
+        g.district.disabled = true; g.commune.disabled = true; g.village.disabled = true;
+    }
+
+    function setAddressGroup(g, a) {
+        const prov = a.province||"", dist = a.district||"", comm = a.commune||"", vill = a.village||"";
+        populateSelect(g.province, Object.keys(cambodiaData), "ជ្រើសរើសខេត្ត/រាជធានី", prov);
+        populateSelect(g.district, prov ? Object.keys(cambodiaData[prov]||{}) : [], "ជ្រើសរើសស្រុក/ខណ្ឌ", dist);
+        g.district.disabled = !prov;
+        populateSelect(g.commune, prov&&dist ? Object.keys(cambodiaData[prov]?.[dist]||{}) : [], "ជ្រើសរើសឃុំ/សង្កាត់", comm);
+        g.commune.disabled = !(prov&&dist);
+        populateSelect(g.village, prov&&dist&&comm ? (cambodiaData[prov]?.[dist]?.[comm]||[]) : [], "ជ្រើសរើសភូមិ", vill);
+        g.village.disabled = !(prov&&dist&&comm);
+    }
+
+    function readAddressGroup(g) {
+        return { province:g.province.value, district:g.district.value, commune:g.commune.value, village:g.village.value };
+    }
+
+    function lockCurrentAddress(locked) {
+        if (locked) { Object.values(currentGroup).forEach(s => s.disabled = true); return; }
+        const prov=currentGroup.province.value, dist=currentGroup.district.value, comm=currentGroup.commune.value;
+        currentGroup.province.disabled = false;
+        currentGroup.district.disabled = !prov;
+        currentGroup.commune.disabled = !(prov&&dist);
+        currentGroup.village.disabled = !(prov&&dist&&comm);
+    }
+
+    function syncCurrentFromBirth() { setAddressGroup(currentGroup, readAddressGroup(pobGroup)); lockCurrentAddress(els.sameAddress.checked); }
+
+    function setupAddressListeners(g, onChange) {
+        g.province.addEventListener("change", () => {
+            const p = g.province.value;
+            populateSelect(g.district, p ? Object.keys(cambodiaData[p]||{}) : [], "ជ្រើសរើសស្រុក/ខណ្ឌ");
+            populateSelect(g.commune, [], "ជ្រើសរើសឃុំ/សង្កាត់");
+            populateSelect(g.village, [], "ជ្រើសរើសភូមិ");
+            g.district.disabled = !p; g.commune.disabled = true; g.village.disabled = true;
+            onChange?.();
+        });
+        g.district.addEventListener("change", () => {
+            const p=g.province.value, d=g.district.value;
+            populateSelect(g.commune, p&&d ? Object.keys(cambodiaData[p]?.[d]||{}) : [], "ជ្រើសរើសឃុំ/សង្កាត់");
+            populateSelect(g.village, [], "ជ្រើសរើសភូមិ");
+            g.commune.disabled = !(p&&d); g.village.disabled = true;
+            onChange?.();
+        });
+        g.commune.addEventListener("change", () => {
+            const p=g.province.value, d=g.district.value, c=g.commune.value;
+            populateSelect(g.village, p&&d&&c ? (cambodiaData[p]?.[d]?.[c]||[]) : [], "ជ្រើសរើសភូមិ");
+            g.village.disabled = !(p&&d&&c);
+            onChange?.();
+        });
+        g.village.addEventListener("change", () => onChange?.());
+    }
+
+    // ===================== DUPLICATE CHECK =====================
+    function normStudentFields(s) {
+        return {
+            studentCodeNormalized: normText(s.studentCode),
+            studentNameNormalized: normText(s.studentName),
+            dobNormalized: normDate(s.dob),
+            contactNormalized: normPhone(s.contact)
+        };
+    }
+
+    function findDuplicate(student, ignoreId="", source=allStudents) {
+        const codeKey = normText(student.studentCode);
+        const nameKey = normText(student.studentName);
+        const classKey = normText(student.className);
+        const dobKey = normDate(student.dob);
+        const phoneKey = normPhone(student.contact);
+        for (const e of source) {
+            if (e.id && e.id === ignoreId) continue;
+            if (codeKey && normText(e.studentCode||e.studentId) === codeKey) return { type:"studentCode", student:e };
+            if (phoneKey && normPhone(e.contact) === phoneKey) return { type:"phone", student:e };
+            if (nameKey && dobKey && normText(e.studentName)===nameKey && normDate(e.dob)===dobKey) return { type:"student", student:e };
+            if (nameKey && classKey && normText(e.studentName)===nameKey && normText(e.className)===classKey) return { type:"student", student:e };
+        }
+        return null;
+    }
+
+    async function findDuplicateOnServer(student, ignoreId="", localSource=[]) {
+        return findDuplicate(student, ignoreId, localSource);
+    }
+
+    function duplicateMsg(dup) {
+        if (!dup) return "";
+        if (dup.type === "studentCode") return `លេខសម្គាល់នេះមានរួចហើយ: ${studentDisplayId(dup.student)}`;
+        if (dup.type === "phone") return `លេខទូរស័ព្ទនេះមានរួចហើយ: ${dup.student.studentName||""}`;
+        return `សិស្សនេះមានរួចហើយ: ${dup.student.studentName||""}`;
+    }
+
+    // ===================== STUDENT CODE GENERATION =====================
+    async function generateStudentCode() {
+        let maxNum = 0;
+        allStudents.forEach(s => {
+            const code = s.studentCode || "";
+            const m = code.match(/(\d+)$/);
+            if (m) maxNum = Math.max(maxNum, parseInt(m[1], 10));
+        });
+        let num = maxNum + 1;
+        let code = `${STUDENT_CODE_PREFIX}-${String(num).padStart(4,"0")}`;
+        const usedCodes = new Set(allStudents.map(s => s.studentCode).filter(Boolean));
+        while (usedCodes.has(code)) {
+            num++;
+            code = `${STUDENT_CODE_PREFIX}-${String(num).padStart(4,"0")}`;
+        }
+        return code;
+    }
+
+    // ===================== FORM =====================
+    function collectPayload() {
+        if (els.sameAddress.checked) syncCurrentFromBirth();
+        return {
+            studentCode: getValue("studentCode"),
+            studentName: getValue("studentName"),
+            gender: document.querySelector('input[name="gender"]:checked')?.value || "ប្រុស",
+            dob: getValue("dob"),
+            fatherName: getValue("fatherName"),
+            motherName: getValue("motherName"),
+            pobProvince: pobGroup.province.value,
+            pobDistrict: pobGroup.district.value,
+            pobCommune: pobGroup.commune.value,
+            pobVillage: pobGroup.village.value,
+            currentProvince: currentGroup.province.value,
+            currentDistrict: currentGroup.district.value,
+            currentCommune: currentGroup.commune.value,
+            currentVillage: currentGroup.village.value,
+            fromSchool: els.fromSchool.value,
+            className: getValue("className"),
+            gpa: getValue("gpa"),
+            contact: getValue("contact")
+        };
+    }
+
+    function addressesMatch(s) {
+        return ["Province","District","Commune","Village"].every(p => (s[`pob${p}`]||"") === (s[`current${p}`]||""));
+    }
+
+    function setEditMode(id) {
+        els.editingId.value = id || "";
+        if (id) {
+            els.formTitle.textContent = "កែសម្រួលសិស្ស";
+            els.formSubtitle.textContent = "កំពុងកែព័ត៌មានសិស្សដែលបានជ្រើស";
+            els.saveBtn.innerHTML = '<ion-icon name="save-outline"></ion-icon><span>រក្សាទុកកំណែ</span>';
+            els.clearBtn.innerHTML = '<ion-icon name="close-outline"></ion-icon><span>បោះបង់</span>';
+        } else {
+            els.formTitle.textContent = "បញ្ចូលសិស្សថ្មី";
+            els.formSubtitle.textContent = "ព័ត៌មានដែលមាន * ត្រូវតែបំពេញ";
+            els.saveBtn.innerHTML = '<ion-icon name="add-circle-outline"></ion-icon><span>រក្សាទុក</span>';
+            els.clearBtn.innerHTML = '<ion-icon name="refresh-outline"></ion-icon><span>សម្អាត</span>';
+        }
+    }
+
+    function resetForm() {
+        els.registrationForm.reset();
+        setEditMode("");
+        resetAddressGroup(pobGroup);
+        resetAddressGroup(currentGroup);
+        els.sameAddress.checked = false;
+        lockCurrentAddress(false);
+    }
+
+    function ensureSchoolOption(v) {
+        if (!v) return;
+        if (!Array.from(els.fromSchool.options).some(o => o.value === v)) els.fromSchool.append(new Option(v,v));
+    }
+
+    function loadStudentIntoForm(id) {
+        const s = allStudents.find(i => i.id === id);
+        if (!s) { showToast("រកមិនឃើញទិន្នន័យសិស្ស","error"); return; }
+        fieldIds.forEach(fid => setValue(fid, s[fid]||""));
+        ensureSchoolOption(s.fromSchool);
+        els.fromSchool.value = s.fromSchool || "";
+        document.querySelectorAll('input[name="gender"]').forEach(i => { i.checked = i.value === (s.gender||"ប្រុស"); });
+        setAddressGroup(pobGroup, { province:s.pobProvince, district:s.pobDistrict, commune:s.pobCommune, village:s.pobVillage });
+        setAddressGroup(currentGroup, { province:s.currentProvince, district:s.currentDistrict, commune:s.currentCommune, village:s.currentVillage });
+        els.sameAddress.checked = addressesMatch(s);
+        lockCurrentAddress(els.sameAddress.checked);
+        setEditMode(id);
+        els.formPanel.scrollIntoView({ behavior:"smooth", block:"start" });
+    }
+
+    function setSaving(isSaving) {
+        els.saveBtn.disabled = isSaving;
+        els.clearBtn.disabled = isSaving;
+        if (isSaving) {
+            els.saveBtn.innerHTML = '<span class="spinner"></span><span>កំពុងរក្សាទុក...</span>';
+        } else {
+            setEditMode(els.editingId.value);
+        }
+    }
+
+    // ===================== LOCAL OPERATIONS =====================
+    async function logHistory(action, studentName, details={}) {
+        try {
+            const logs = loadHistoryFromLocalStorage();
+            const newLog = {
+                id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                action,
+                studentName,
+                details: JSON.stringify(details),
+                timestamp: new Date().toISOString()
+            };
+            logs.unshift(newLog);
+            if (logs.length > 100) {
+                logs.length = 100;
+            }
+            saveHistoryToLocalStorage(logs);
+            renderHistory(logs);
+        } catch(e) {
+            console.error("History log error:", e);
+        }
+    }
+
+    async function handleFormSubmit(e) {
+        e.preventDefault();
+        if (!els.registrationForm.reportValidity()) return;
+
+        const editingId = els.editingId.value;
+        const payload = collectPayload();
+
+        if (!payload.studentName) { showToast("សូមបំពេញឈ្មោះសិស្ស","warning"); return; }
+        if (!payload.contact) { showToast("សូមបំពេញលេខទូរស័ព្ទ","warning"); return; }
+
+        const dup = await findDuplicateOnServer(payload, editingId, allStudents);
+        if (dup) { showToast(duplicateMsg(dup),"warning"); return; }
+
+        setSaving(true);
+        try {
+            const nowIso = new Date().toISOString();
+            if (editingId) {
+                if (!payload.studentCode) {
+                    const existing = allStudents.find(i => i.id === editingId);
+                    payload.studentCode = studentDisplayId(existing, editingId);
+                }
+                const idx = allStudents.findIndex(i => i.id === editingId);
+                if (idx !== -1) {
+                    allStudents[idx] = {
+                        ...allStudents[idx],
+                        ...payload,
+                        ...normStudentFields(payload),
+                        updatedAt: nowIso
+                    };
+                }
+                saveToLocalStorage(allStudents);
+                await logHistory("edited", payload.studentName, { studentId: payload.studentCode, recordId: editingId });
+                await syncGoogleSheet("upsert", {...payload, recordId: editingId}, payload.studentCode||editingId);
+                showToast("បានកែសម្រួលព័ត៌មានសិស្ស");
+            } else {
+                payload.studentCode = await generateStudentCode();
+                const newId = `stu-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                const newStudent = {
+                    id: newId,
+                    ...payload,
+                    ...normStudentFields(payload),
+                    createdAt: nowIso,
+                    updatedAt: nowIso
+                };
+                allStudents.unshift(newStudent);
+                saveToLocalStorage(allStudents);
+                await logHistory("added", payload.studentName, { studentId: payload.studentCode, recordId: newId, ...payload });
+                await syncGoogleSheet("upsert", {...payload, recordId: newId}, payload.studentCode);
+                showToast(`បានបន្ថែម ${payload.studentName} (${payload.studentCode})`);
+            }
+            resetForm();
+            await refreshStudents({ reset: !editingId });
+        } catch(e) {
+            console.error("Save error:", e);
+            showToast("រក្សាទុកមិនបាន","error");
+        } finally {
+            setSaving(false);
+        }
+    }
+
+    function openDeleteModal(id) {
+        const s = allStudents.find(i => i.id === id);
+        if (!s) return;
+        studentToDeleteId = id;
+        els.deleteStudentName.textContent = s.studentName || "សិស្សនេះ";
+        els.deleteModal.classList.add("is-open");
+    }
+
+    function closeDeleteModal() { studentToDeleteId = null; els.deleteModal.classList.remove("is-open"); }
+
+    async function handleDeleteStudent() {
+        if (!studentToDeleteId) return;
+        const s = allStudents.find(i => i.id === studentToDeleteId);
+        const name = s?.studentName || "Unknown";
+        els.confirmDeleteBtn.disabled = true;
+        try {
+            allStudents = allStudents.filter(i => i.id !== studentToDeleteId);
+            saveToLocalStorage(allStudents);
+            await logHistory("deleted", name, { studentId: studentDisplayId(s, studentToDeleteId), recordId: studentToDeleteId });
+            await syncGoogleSheet("delete", s||{studentName:name}, studentDisplayId(s, studentToDeleteId));
+            closeDeleteModal();
+            showToast("បានលុបសិស្ស");
+            if (els.editingId.value === studentToDeleteId) resetForm();
+            await refreshStudents();
+        } catch(e) {
+            console.error("Delete error:", e);
+            showToast("លុបមិនបាន","error");
+        } finally {
+            els.confirmDeleteBtn.disabled = false;
+        }
+    }
+
+    function openDeleteAllModal() {
+        if (!allStudents.length) {
+            showToast("មិនមានទិន្នន័យសម្រាប់លុប","warning");
+            return;
+        }
+        els.deleteAllCount.textContent = allStudents.length;
+        els.deleteAllModal.classList.add("is-open");
+    }
+
+    function closeDeleteAllModal() {
+        els.deleteAllModal.classList.remove("is-open");
+    }
+
+    async function handleDeleteAllStudents() {
+        const count = allStudents.length;
+        if (!count) {
+            closeDeleteAllModal();
+            showToast("មិនមានទិន្នន័យសម្រាប់លុប","warning");
+            return;
+        }
+        els.confirmDeleteAllBtn.disabled = true;
+        els.cancelDeleteAllBtn.disabled = true;
+        try {
+            allStudents = [];
+            saveToLocalStorage(allStudents);
+            await logHistory("cleared", "ទិន្នន័យសិស្សទាំងអស់", { total: count });
+            await syncGoogleSheet("backup", {}, "", []);
+            closeDeleteAllModal();
+            resetForm();
+            await refreshStudents({ reset: true });
+            showToast(`បានលុបទិន្នន័យសិស្ស ${count} នាក់`);
+        } catch(e) {
+            console.error("Delete all error:", e);
+            showToast("លុបទិន្នន័យទាំងអស់មិនបាន","error");
+        } finally {
+            els.confirmDeleteAllBtn.disabled = false;
+            els.cancelDeleteAllBtn.disabled = false;
+        }
+    }
+
+    // ===================== STATS =====================
+    async function updateStats() {
+        totalStudentsCount = allStudents.length;
+        els.totalStudents.textContent = totalStudentsCount;
+        els.maleStudents.textContent = allStudents.filter(s => s.gender==="ប្រុស").length;
+        els.femaleStudents.textContent = allStudents.filter(s => s.gender==="ស្រី").length;
+        els.lastSync.textContent = formatTime();
+        els.deleteAllBtn.disabled = totalStudentsCount === 0;
+    }
+
+    // ===================== FILTERS =====================
+    function buildSchoolFilter() {
+        const sel = els.schoolFilter.value;
+        const formSchools = Array.from(els.fromSchool.options).map(o=>o.value).filter(Boolean);
+        const dataSchools = allStudents.map(s=>s.fromSchool).filter(Boolean);
+        const schools = [...new Set([...formSchools,...dataSchools])].sort((a,b)=>a.localeCompare(b,"km-KH"));
+        els.schoolFilter.innerHTML = '<option value="">សាលាទាំងអស់</option>';
+        schools.forEach(s => els.schoolFilter.append(new Option(s,s)));
+        els.schoolFilter.value = schools.includes(sel) ? sel : "";
+    }
+
+    function buildClassFilter() {
+        const sel = els.classFilter.value;
+        const classes = [...new Set(allStudents.map(s=>s.className).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"km-KH",{numeric:true}));
+        els.classFilter.innerHTML = '<option value="">ថ្នាក់ទាំងអស់</option>';
+        classes.forEach(c => els.classFilter.append(new Option(c,c)));
+        els.classFilter.value = classes.includes(sel) ? sel : "";
+    }
+
+    function studentSearchText(s) {
+        return [studentDisplayId(s),s.studentName,s.gender,s.dob,s.fatherName,s.motherName,s.fromSchool,s.className,s.gpa,s.contact,addressText(s,"pob"),addressText(s,"current")].filter(Boolean).join(" ").toLowerCase();
+    }
+
+    function applyFilters() {
+        const term = els.searchInput.value.trim().toLowerCase();
+        const gender = els.genderFilter.value;
+        const className = els.classFilter.value;
+        const school = els.schoolFilter.value;
+        
+        filteredStudents = allStudents.filter(s =>
+            (!term || studentSearchText(s).includes(term)) &&
+            (!gender || s.gender === gender) &&
+            (!className || s.className === className) &&
+            (!school || s.fromSchool === school)
+        );
+
+        if (isShowAll()) {
+            visibleStudents = filteredStudents;
+            hasNextPage = false;
+        } else {
+            const start = currentPageIndex * pageSize;
+            const end = start + pageSize;
+            visibleStudents = filteredStudents.slice(start, end);
+            hasNextPage = filteredStudents.length > end;
+        }
+        
+        renderStudentViews();
+    }
+
+    function hasActiveFilters() { return Boolean(els.searchInput.value.trim()||els.genderFilter.value||els.classFilter.value||els.schoolFilter.value); }
+
+    // ===================== PAGER =====================
+    function isShowAll() { return pageSize === 0; }
+
+    function updatePager() {
+        const total = filteredStudents.length;
+        if (isShowAll()) {
+            els.pageInfo.textContent = `សរុប ${total} នាក់`;
+            els.prevPageBtn.disabled = true;
+            els.nextPageBtn.disabled = true;
+            els.prevPageBtn.classList.add('is-hidden');
+            els.nextPageBtn.classList.add('is-hidden');
+        } else {
+            const start = total === 0 ? 0 : (currentPageIndex * pageSize) + 1;
+            const end = Math.min((currentPageIndex * pageSize) + pageSize, total);
+            els.pageInfo.textContent = `ទំព័រ ${currentPageIndex + 1} (${start}–${end} / ${total})`;
+            els.prevPageBtn.disabled = isLoadingPage || currentPageIndex === 0;
+            els.nextPageBtn.disabled = isLoadingPage || !hasNextPage;
+            els.prevPageBtn.classList.remove('is-hidden');
+            els.nextPageBtn.classList.remove('is-hidden');
+        }
+        els.pageSizeSelect.disabled = isLoadingPage;
+    }
+
+    // ===================== GROUPED DISPLAY =====================
+    function groupedByClass(students) {
+        const groups = new Map();
+        students.forEach(s => {
+            const cls = s.className || "មិនទាន់បញ្ចូលថ្នាក់";
+            if (!groups.has(cls)) groups.set(cls, []);
+            groups.get(cls).push(s);
+        });
+        return [...groups.entries()].sort(([a],[b]) => a.localeCompare(b,"km-KH",{numeric:true}));
+    }
+
+    // ===================== RENDER =====================
+    function genderBadge(gender) {
+        const cls = gender==="ស្រី" ? "badge-violet" : "badge-blue";
+        return `<span class="badge ${cls}">${esc(gender)}</span>`;
+    }
+
+    function skeletonRows(n) {
+        return Array.from({length:n}, () => `
+            <tr class="skeleton-row">
+                <td><div class="skeleton skeleton-line" style="width:16px"></div></td>
+                <td><div class="skeleton skeleton-line" style="width:50px"></div></td>
+                <td><div class="skeleton skeleton-line" style="width:100px"></div></td>
+                <td><div class="skeleton skeleton-line" style="width:30px"></div></td>
+                <td><div class="skeleton skeleton-line" style="width:70px"></div></td>
+                <td><div class="skeleton skeleton-line" style="width:40px"></div></td>
+                <td><div class="skeleton skeleton-line" style="width:80px"></div></td>
+                <td><div class="skeleton skeleton-line" style="width:50px"></div></td>
+                <td><div class="skeleton skeleton-line" style="width:50px"></div></td>
+                <td><div class="skeleton skeleton-line" style="width:50px"></div></td>
+                <td><div class="skeleton skeleton-line" style="width:60px"></div></td>
+                <td><div class="skeleton skeleton-line" style="width:70px"></div></td>
+                <td><div class="skeleton skeleton-line" style="width:70px"></div></td>
+                <td><div class="skeleton skeleton-line" style="width:70px"></div></td>
+                <td><div class="skeleton skeleton-line" style="width:50px"></div></td>
+                <td><div class="skeleton skeleton-line" style="width:50px"></div></td>
+                <td><div class="skeleton skeleton-line" style="width:50px"></div></td>
+                <td><div class="skeleton skeleton-line" style="width:60px"></div></td>
+                <td><div class="skeleton skeleton-line" style="width:40px"></div></td>
+                <td></td>
+            </tr>`
+        ).join("");
+    }
+
+    function renderStudentViews() {
+        const modeText = isShowAll() ? `${visibleStudents.length} / ${allStudents.length} នាក់ (ទាំងអស់)` : `${visibleStudents.length} / ${allStudents.length} នាក់ ក្នុងទំព័រនេះ`;
+        els.resultSummary.textContent = modeText;
+        updatePager();
+
+        if (visibleStudents.length === 0) {
+            els.studentList.innerHTML = `
+                <tr><td colspan="20">
+                    <div class="empty">
+                        <ion-icon name="person-outline"></ion-icon>
+                        <p>មិនមានទិន្នន័យ</p>
+                    </div>
+                </td></tr>`;
+            els.studentCards.innerHTML = `<div class="empty"><ion-icon name="person-outline"></ion-icon><p>មិនមានទិន្នន័យ</p></div>`;
+            return;
+        }
+
+        let rowNum = 0;
+        els.studentList.innerHTML = groupedByClass(visibleStudents).map(([cls, students]) => {
+            const rows = students.map(s => {
+                rowNum++;
+                return `
+                    <tr>
+                        <td class="muted" style="font-size:.8rem; text-align:center;">${rowNum}</td>
+                        <td style="font-family: monospace; font-size:.82rem;">${esc(studentVisibleId(s)||"–")}</td>
+                        <td style="font-weight:600; color:var(--text);">${esc(s.studentName)}</td>
+                        <td style="text-align:center;">${genderBadge(s.gender||"")}</td>
+                        <td style="text-align:center; font-size:.82rem;">${esc(formatDate(s.dob)||"–")}</td>
+                        <td style="text-align:center;">${esc(s.className||"–")}</td>
+                        <td style="max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap" title="${esc(s.fromSchool||"")}">${esc(s.fromSchool||"–")}</td>
+                        <td>${esc(s.pobVillage||"–")}</td>
+                        <td>${esc(s.pobCommune||"–")}</td>
+                        <td>${esc(s.pobDistrict||"–")}</td>
+                        <td>${esc(s.pobProvince||"–")}</td>
+                        <td>${esc(s.contact||"–")}</td>
+                        <td>${esc(s.fatherName||"–")}</td>
+                        <td>${esc(s.motherName||"–")}</td>
+                        <td>${esc(s.currentVillage||"–")}</td>
+                        <td>${esc(s.currentCommune||"–")}</td>
+                        <td>${esc(s.currentDistrict||"–")}</td>
+                        <td>${esc(s.currentProvince||"–")}</td>
+                        <td style="text-align:center;">${esc(s.gpa||"–")}</td>
+                        <td>
+                            <div class="row-actions">
+                                <button class="btn btn-icon print-student-btn" type="button" title="Print" data-id="${esc(s.id)}">
+                                    <ion-icon name="print-outline"></ion-icon>
+                                </button>
+                                <button class="btn btn-icon edit-btn" type="button" title="កែ" data-id="${esc(s.id)}">
+                                    <ion-icon name="create-outline"></ion-icon>
+                                </button>
+                                <button class="btn btn-icon delete-btn" type="button" title="លុប" data-id="${esc(s.id)}" style="color:var(--red)">
+                                    <ion-icon name="trash-outline"></ion-icon>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>`;
+            }).join("");
+            return `
+                <tr class="class-group-row">
+                    <td colspan="20">ថ្នាក់ ${esc(cls)}<span class="class-count">${students.length} នាក់</span></td>
+                </tr>${rows}`;
+        }).join("");
+
+        let cardNum = 0;
+        const cardGroups = groupedByClass(visibleStudents).map(([cls, students]) => {
+            const cards = students.map(s => {
+                cardNum++;
+                return `
+                    <article class="student-card">
+                        <div class="card-head">
+                            <div>
+                                <div class="student-name">${cardNum}. ${esc(s.studentName)}</div>
+                                <div class="student-meta">${esc(studentVisibleId(s)||"–")} · ${esc(formatDate(s.dob)||"–")}</div>
+                            </div>
+                            ${genderBadge(s.gender||"")}
+                        </div>
+                        <div class="card-meta">
+                            <div>ថ្នាក់: ${esc(s.className||"–")}</div>
+                            <div>សាលា: ${esc(s.fromSchool||"–")}</div>
+                            <div>ទូរស័ព្ទ: ${esc(s.contact||"–")}</div>
+                            <div>ឈ្មោះឪពុក: ${esc(s.fatherName||"–")}</div>
+                            <div>ឈ្មោះម្តាយ: ${esc(s.motherName||"–")}</div>
+                            <div>ទីកន្លែងកំណើត: ${esc(addressText(s,"pob")||"–")}</div>
+                            <div>អាសយដ្ឋានបច្ចុប្បន្ន: ${esc(addressText(s,"current")||"–")}</div>
+                            <div>មធ្យមភាគ: ${esc(s.gpa||"–")}</div>
+                        </div>
+                        <div class="row-actions" style="opacity:1;margin-top:10px;justify-content:flex-start">
+                            <button class="btn btn-ghost btn-sm print-student-btn" type="button" data-id="${esc(s.id)}">
+                                <ion-icon name="print-outline"></ion-icon> Print
+                            </button>
+                            <button class="btn btn-secondary btn-sm edit-btn" type="button" data-id="${esc(s.id)}">
+                                <ion-icon name="create-outline"></ion-icon> កែ
+                            </button>
+                            <button class="btn btn-sm delete-btn" type="button" data-id="${esc(s.id)}" style="background:var(--red-soft);color:var(--red)">
+                                <ion-icon name="trash-outline"></ion-icon> លុប
+                            </button>
+                        </div>
+                    </article>`;
+            }).join("");
+            return `
+                <div>
+                    <div class="class-card-header">
+                        <span>ថ្នាក់ ${esc(cls)}</span>
+                        <span>${students.length} នាក់</span>
+                    </div>
+                    ${cards}
+                </div>`;
+        });
+        els.studentCards.innerHTML = cardGroups.join("");
+    }
+
+    function setPageLoading(loading) {
+        isLoadingPage = loading;
+        if (loading) {
+            els.studentList.innerHTML = skeletonRows(6);
+            els.studentCards.innerHTML = `<div class="empty"><ion-icon name="hourglass-outline"></ion-icon><p>កំពុងផ្ទុក...</p></div>`;
+        }
+        updatePager();
+    }
+
+    async function loadStudentsPage(pageIndex=currentPageIndex) {
+        setPageLoading(true);
+        try {
+            currentPageIndex = pageIndex;
+            applyFilters();
+            setStatus("ឡូកាល់ (Offline)", "connected");
+        } catch(e) {
+            console.error("Load page error:", e);
+            setStatus("មានបញ្ហា","error");
+            els.studentList.innerHTML = `<tr><td colspan="20"><div class="empty"><p>ផ្ទុកទិន្នន័យមិនបាន</p></div></td></tr>`;
+        } finally {
+            setPageLoading(false);
+        }
+    }
+
+    function resetPagination() { currentPageIndex=0; hasNextPage=false; }
+
+    async function refreshStudents({ reset=false }={}) {
+        if (reset) resetPagination();
+        allStudents = loadFromLocalStorage();
+        allStudents.sort((a,b) => tsMillis(b.createdAt)-tsMillis(a.createdAt));
+        await updateStats();
+        buildSchoolFilter();
+        buildClassFilter();
+        applyFilters();
+    }
+
+    // ===================== HISTORY =====================
+    function renderHistory(logs) {
+        const sorted = [...logs].sort((a,b)=>tsMillis(b.timestamp)-tsMillis(a.timestamp)).slice(0,20);
+        if (!sorted.length) { els.historyLog.innerHTML = '<p class="empty" style="padding:16px">មិនទាន់មានសកម្មភាព...</p>'; return; }
+        const map = {
+            added: { text:"បានបន្ថែម", cls:"history-added" },
+            edited: { text:"បានកែ", cls:"history-edited" },
+            deleted: { text:"បានលុប", cls:"history-deleted" },
+            cleared: { text:"បានលុបទាំងអស់", cls:"history-deleted" },
+            imported: { text:"បាន Import", cls:"history-added" },
+            backup: { text:"Backup", cls:"history-backup" }
+        };
+        els.historyLog.innerHTML = sorted.map(l => {
+            const a = map[l.action]||{text:l.action||"",cls:""};
+            let ts = "...";
+            if (l.timestamp) {
+                const d = new Date(l.timestamp);
+                ts = isNaN(d) ? "..." : d.toLocaleString("km-KH");
+            }
+            return `
+                <div class="history-item ${a.cls}">
+                    <div class="history-dot"></div>
+                    <div class="history-body">
+                        <div><span class="history-action">${a.text}</span> <strong>${esc(l.studentName||"")}</strong></div>
+                        <div class="history-time">${esc(ts)}</div>
+                    </div>
+                </div>`;
+        }).join("");
+    }
+
+    // ===================== BACKUP =====================
+    function setBackupLoading(loading) {
+        els.backupNowBtn.disabled = loading;
+        els.backupNowBtn.innerHTML = loading
+            ? '<span class="spinner"></span><span>Backup...</span>'
+            : '<ion-icon name="cloud-done-outline"></ion-icon><span>Backup</span>';
+    }
+
+    async function backupAllStudents() {
+        setBackupLoading(true);
+        try {
+            await syncGoogleSheet("backup", {}, "", allStudents);
+            localStorage.setItem(BACKUP_TIME_STORAGE_KEY, new Date().toISOString());
+            await logHistory("backup", "Google Sheet", { total: allStudents.length });
+            showToast(`Backup ${allStudents.length} នាក់ ទៅ Google Sheet`);
+        } catch(e) {
+            console.error("Backup error:", e);
+            showToast("Backup មិនបាន","error");
+        } finally {
+            setBackupLoading(false);
+        }
+    }
+
+    // ===================== PRINT =====================
+    function printWindow(title, content) {
+        const win = window.open("","_blank","width=1100,height=800");
+        if (!win) { showToast("Browser បានរារាំងផ្ទាំង Print","warning"); return; }
+        const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+        win.document.write(`
+            <!DOCTYPE html><html lang="km"><head>
+            <meta charset="UTF-8"><title>${esc(title)}</title>
+            <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+            <style>
+                @page { size: A4; margin: 14mm; }
+                * { box-sizing: border-box; }
+                body { margin:0; color:#111827; font-family:"Kantumruy Pro",Arial,sans-serif; line-height:1.55; }
+                h1 { margin:0 0 6px; text-align:center; font-size:22px; font-weight:700; }
+                h2 { margin:20px 0 10px; font-size:15px; }
+                .meta { margin-bottom:18px; text-align:center; color:#6b7280; font-size:11px; }
+                table { width:100%; border-collapse:collapse; }
+                th,td { padding:7px 9px; border:1px solid #d1d5db; text-align:left; vertical-align:top; font-size:12px; }
+                th { background:#eef2f1; font-weight:700; }
+                .class-row td { background:#d9f3ef; color:#115e59; font-weight:700; }
+                .form-table th { width:30%; }
+                .sig-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:60px; margin-top:42px; text-align:center; }
+                .sig-line { margin-top:56px; border-top:1px solid #111; padding-top:8px; font-size:12px; }
+                .print-bar { margin:0 0 14px; text-align:right; }
+                .print-bar button { height:36px; border:0; border-radius:6px; padding:0 14px; color:#fff; background:#0d9488; font:inherit; font-weight:700; cursor:pointer; }
+                @media print { .print-bar { display:none; } }
+            </style></head><body>
+            <div class="print-bar"><button onclick="window.print()">🖨️ Print / Save PDF</button></div>
+            ${content}
+            </body></html>`);
+        win.document.close();
+        setTimeout(() => { win.focus(); win.print(); }, 350);
+    }
+
+    function printStudent(id) {
+        const s = allStudents.find(i => i.id === id);
+        if (!s) { showToast("រកមិនឃើញទិន្នន័យសិស្ស","warning"); return; }
+        const rows = [
+            ["លេខសម្គាល់",studentVisibleId(s)],["ឈ្មោះ",s.studentName],["ភេទ",s.gender],
+            ["ថ្ងៃខែឆ្នាំកំណើត",formatDate(s.dob)],["ថ្នាក់",s.className],["សាលា",s.fromSchool],
+            ["ទីកន្លែងកំណើត",addressText(s,"pob")],["លេខទូរស័ព្ទ",s.contact],
+            ["ឈ្មោះឪពុក",s.fatherName],["ឈ្មោះម្តាយ",s.motherName],
+            ["អាសយដ្ឋានបច្ចុប្បន្ន",addressText(s,"current")],["មធ្យមភាគ",s.gpa]
+        ].map(([l,v]) => `<tr><th>${esc(l)}</th><td>${esc(v||"–")}</td></tr>`).join("");
+        printWindow("ពាក្យចុះឈ្មោះ",`
+            <h1>ពាក្យចុះឈ្មោះសិស្ស</h1>
+            <p class="meta">បោះពុម្ព ${esc(new Date().toLocaleString("km-KH"))}</p>
+            <table class="form-table"><tbody>${rows}</tbody></table>
+            <div class="sig-grid">
+                <div><div>ហត្ថលេខាមាតាបិតា/អាណាព្យាបាល</div><div class="sig-line">ឈ្មោះ និងហត្ថលេខា</div></div>
+                <div><div>អ្នកទទួលពាក្យ</div><div class="sig-line">ឈ្មោះ និងហត្ថលេខា</div></div>
+            </div>`);
+    }
+
+    function printStudentList() {
+        const rows = hasActiveFilters() ? visibleStudents : allStudents;
+        if (!rows.length) { showToast("មិនមានទិន្នន័យសម្រាប់បោះពុម្ព","warning"); return; }
+        let idx = 0;
+        const body = groupedByClass(rows).map(([cls,students]) => {
+            const studentRows = students.map(s => {
+                idx++;
+                return `<tr>
+                    <td class="num-col">${idx}</td>
+                    <td style="font-family: monospace; font-size: 10.5px; text-align: center;">${esc(studentVisibleId(s)||"")}</td>
+                    <td style="font-weight: 600;">${esc(s.studentName||"")}</td>
+                    <td class="center-col">${esc(s.gender||"")}</td>
+                    <td class="center-col" style="font-size: 10.5px;">${esc(formatDate(s.dob)||"")}</td>
+                    <td class="center-col">${esc(s.className||"")}</td>
+                    <td>${esc(s.fromSchool||"")}</td>
+                    <td>${esc(s.pobVillage||"")}</td>
+                    <td>${esc(s.pobCommune||"")}</td>
+                    <td>${esc(s.pobDistrict||"")}</td>
+                    <td>${esc(s.pobProvince||"")}</td>
+                    <td style="font-size: 10.5px; text-align: center;">${esc(s.contact||"")}</td>
+                    <td>${esc(s.fatherName||"")}</td>
+                    <td>${esc(s.motherName||"")}</td>
+                    <td>${esc(s.currentVillage||"")}</td>
+                    <td>${esc(s.currentCommune||"")}</td>
+                    <td>${esc(s.currentDistrict||"")}</td>
+                    <td>${esc(s.currentProvince||"")}</td>
+                    <td class="center-col">${esc(s.gpa||"")}</td>
+                </tr>`;
+            }).join("");
+            return `<tr class="class-row"><td colspan="19">ថ្នាក់ ${esc(cls)} – ${students.length} នាក់</td></tr>${studentRows}`;
+        }).join("");
+        printWindow("បញ្ជីសិស្ស",`
+            <style>
+                @page { size: A4 landscape; margin: 10mm; }
+                table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+                th, td { border: 1px solid #9ca3af; padding: 6px 8px; font-size: 11px; vertical-align: middle; }
+                th { background: #f3f4f6; text-align: center; font-weight: 700; }
+                .class-row td { background: #e0f2fe; color: #0369a1; font-weight: 700; font-size: 12px; border-top: 2px solid #9ca3af; }
+                td.num-col { text-align: center; }
+                td.center-col { text-align: center; }
+            </style>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                <div style="text-align: center; font-weight: bold; font-size: 12px; line-height: 1.6;">
+                    <div>មន្ទីរអប់រំ យុវជន និងកីឡា</div>
+                    <div>វិទ្យាល័យសុខអានព្រៃមេលង</div>
+                </div>
+                <div style="text-align: center; font-weight: bold; font-size: 12px; line-height: 1.6;">
+                    <div style="font-size: 13px; letter-spacing: 0.5px;">ព្រះរាជាណាចក្រកម្ពុជា</div>
+                    <div style="font-size: 11px; margin-top: 2px;">ជាតិ សាសនា ព្រះមហាក្សត្រ</div>
+                    <div style="font-family: 'Kantumruy Pro', sans-serif; font-weight: normal; font-size: 10px; margin-top: -3px; letter-spacing: -1px;">🕊️🕊️🕊️</div>
+                </div>
+            </div>
+            <div style="clear: both;"></div>
+            <h1 style="text-align: center; font-size: 20px; font-weight: 700; margin: 10px 0 5px;">បញ្ជីរាយនាមសិស្ស</h1>
+            <p style="text-align: center; font-size: 12px; font-weight: bold; color: #374151; margin: 0 0 15px 0;">
+                ឆ្នាំសិក្សា ២០២៥ - ២០២៦ | សរុប ${rows.length} នាក់ | ថ្ងៃបោះពុម្ព៖ ${esc(new Date().toLocaleDateString("km-KH"))}
+            </p>
+            <table>
+                <thead>
+                    <tr>
+                        <th rowspan="2" style="width: 40px;">ល.រ</th>
+                        <th rowspan="2" style="width: 80px;">អត្តលេខ</th>
+                        <th rowspan="2" style="min-width: 140px;">គោត្តនាម-នាម</th>
+                        <th rowspan="2" style="width: 50px;">ភេទ</th>
+                        <th rowspan="2" style="width: 85px;">ថ្ងៃកំណើត</th>
+                        <th rowspan="2" style="width: 60px;">ថ្នាក់</th>
+                        <th rowspan="2" style="min-width: 120px;">សាលា</th>
+                        <th colspan="4">ទីកន្លែងកំណើត</th>
+                        <th rowspan="2" style="min-width: 95px;">លេខទូរស័ព្ទ</th>
+                        <th rowspan="2" style="min-width: 100px;">ឈ្មោះឪពុក</th>
+                        <th rowspan="2" style="min-width: 100px;">ឈ្មោះម្តាយ</th>
+                        <th colspan="4">អាសយដ្ឋានបច្ចុប្បន្ន</th>
+                        <th rowspan="2" style="width: 60px;">មធ្យមភាគ</th>
+                    </tr>
+                    <tr>
+                        <th style="width: 70px;">ភូមិ</th>
+                        <th style="width: 70px;">ឃុំ/សង្កាត់</th>
+                        <th style="width: 70px;">ស្រុក/ខណ្ឌ</th>
+                        <th style="width: 80px;">ខេត្ត/ក្រុង</th>
+                        <th style="width: 70px;">ភូមិ</th>
+                        <th style="width: 70px;">ឃុំ/សង្កាត់</th>
+                        <th style="width: 70px;">ស្រុក/ខណ្ឌ</th>
+                        <th style="width: 80px;">ខេត្ត/ក្រុង</th>
+                    </tr>
+                </thead>
+                <tbody>${body}</tbody>
+            </table>`);
+    }
+
+    // ===================== IMPORT =====================
+    const importAliases = {
+        studentCode:["អត្តលេខ","លេខសម្គាល់សិស្ស","លេខសិស្ស","studentCode","student id","id"],
+        studentName:["គោត្តនាម-នាម","ឈ្មោះសិស្ស","ឈ្មោះពេញ","ឈ្មោះ","studentName","student name","name","full name"],
+        gender:["ភេទ","gender","sex"],
+        dob:["ថ្ងៃកំណើត","ថ្ងៃខែឆ្នាំកំណើត","dob","date of birth","birthdate"],
+        pobVillage:["ភូមិ","ភូមិ (កំណើត)","ភូមិកំណើត","ទីកន្លែងកំណើត - ភូមិ","pobVillage"],
+        pobCommune:["ឃុំ/សង្កាត់","ឃុំ/សង្កាត់ (កំណើត)","ឃុំសង្កាត់កំណើត","ទីកន្លែងកំណើត - ឃុំ/សង្កាត់","pobCommune"],
+        pobDistrict:["ស្រុក/ខណ្ឌ","ស្រុក/ខណ្ឌ (កំណើត)","ស្រុកខណ្ឌកំណើត","ទីកន្លែងកំណើត - ស្រុក/ខណ្ឌ","pobDistrict"],
+        pobProvince:["ខេត្ត/ក្រុង","ខេត្ត/ក្រុង (កំណើត)","ខេត្តរាជធានីកំណើត","ទីកន្លែងកំណើត - ខេត្ត/ក្រុង","pobProvince"],
+        fatherName:["ឈ្មោះឳពុក","ឈ្មោះឪពុក","fatherName","father"],
+        motherName:["ឈ្មោះម្តាយ","ឈ្មោះម្ដាយ","motherName","mother"],
+        guardianName:["ឈ្មោះអាណាព្យាបាល","អាណាព្យាបាល","guardian","parent"],
+        currentVillage:["ភូមិ (បច្ចុប្បន្ន)","ភូមិបច្ចុប្បន្ន","អាសយដ្ឋានបច្ចុប្បន្ន - ភូមិ","currentVillage"],
+        currentCommune:["ឃុំ/សង្កាត់ (បច្ចុប្បន្ន)","ឃុំសង្កាត់បច្ចុប្បន្ន","អាសយដ្ឋានបច្ចុប្បន្ន - ឃុំ/សង្កាត់","currentCommune"],
+        currentDistrict:["ស្រុក/ខណ្ឌ (បច្ចុប្បន្ន)","ស្រុកខណ្ឌបច្ចុប្បន្ន","អាសយដ្ឋានបច្ចុប្បន្ន - ស្រុក/ខណ្ឌ","currentDistrict"],
+        currentProvince:["ខេត្ត/ក្រុង (បច្ចុប្បន្ន)","ខេត្តរាជធានីបច្ចុប្បន្ន","អាសយដ្ឋានបច្ចុប្បន្ន - ខេត្ត/ក្រុង","currentProvince"],
+        address:["អាសយដ្ឋាន","address"],
+        fromSchool:["សាលា","មកពីសាលា","fromSchool","school"],
+        className:["ថ្នាក់","className","class","grade"],
+        gpa:["មធ្យមភាគ","gpa","score"],
+        contact:["ទំនាក់ទំនង","លេខទូរស័ព្ទ","ទូរស័ព្ទ","contact","phone","phone number"]
+    };
+
+    function normHeader(v) { return String(v||"").replace(/^\uFEFF/,"").trim().toLocaleLowerCase("km-KH").replace(/[()\s/_.,:។-]/g,""); }
+    function readImportVal(row, field) {
+        const m = new Map(Object.entries(row).map(([k,v])=>[normHeader(k),v]));
+        for (const alias of (importAliases[field]||[field]).map(normHeader)) {
+            if (m.has(alias)) return m.get(alias);
+        }
+        return "";
+    }
+    function importFieldForHeader(header, index=-1) {
+        const normalized = normHeader(header);
+        const positional = index >= 0 ? STUDENT_IMPORT_FIELDS[index] || "" : "";
+        if (!normalized) return positional;
+
+        const genericAddressHeaders = ["ភូមិ", "ឃុំ/សង្កាត់", "ស្រុក/ខណ្ឌ", "ខេត្ត/ក្រុង"].map(normHeader);
+        if (positional && genericAddressHeaders.includes(normalized)) return positional;
+
+        for (const [field, aliases] of Object.entries(importAliases)) {
+            if ([field, ...aliases].map(normHeader).includes(normalized)) return field;
+        }
+        return positional;
+    }
+    function headerMatchScore(row) {
+        const known = Object.values(importAliases).flat().map(normHeader);
+        return row.reduce((n,c) => n+(known.includes(normHeader(c))?1:0),0);
+    }
+    function normImportRow(row) {
+        const r = f => String(readImportVal(row,f)??"").trim();
+        const guardian = r("guardianName"), addr = r("address");
+        return {
+            studentCode:r("studentCode"), studentName:r("studentName"),
+            gender:normGender(r("gender")), dob:normDate(readImportVal(row,"dob")),
+            fatherName:r("fatherName")||guardian, motherName:r("motherName"),
+            pobProvince:r("pobProvince"),pobDistrict:r("pobDistrict"),pobCommune:r("pobCommune"),pobVillage:r("pobVillage"),
+            currentProvince:r("currentProvince"),currentDistrict:r("currentDistrict"),currentCommune:r("currentCommune"),currentVillage:r("currentVillage")||addr,
+            fromSchool:r("fromSchool"),className:r("className"),gpa:r("gpa"),contact:r("contact")
+        };
+    }
+    function parseCSV(text) {
+        const rows=[];let row=[],field="",quoted=false;
+        const data=String(text||"").replace(/^\uFEFF/,"");
+        for(let i=0;i<data.length;i++){
+            const c=data[i],n=data[i+1];
+            if(quoted){if(c==='"'&&n==='"'){field+='"';i++;}else if(c==='"'){quoted=false;}else{field+=c;}}
+            else if(c==='"'){quoted=true;}else if(c===','){row.push(field);field="";}
+            else if(c==='\n'){row.push(field);rows.push(row);row=[];field="";}
+            else if(c!=='\r'){field+=c;}
+        }
+        row.push(field);if(row.some(c=>String(c).trim()!==""))rows.push(row);return rows;
+    }
+    function rowsToObjects(rows){
+        let hi=0,best=-1;
+        rows.forEach((r,i)=>{const s=headerMatchScore(r);if(s>best){best=s;hi=i;}});
+        
+        const subHeaderKeywords = ["ភូមិ", "ឃុំ/សង្កាត់", "ស្រុក/ខណ្ឌ", "ខេត្ត/ក្រុង", "village", "commune", "district", "province"];
+        let keywordCount = 0;
+        if (rows[hi+1]) {
+            rows[hi+1].forEach(cell => {
+                const val = normHeader(cell);
+                if (subHeaderKeywords.map(normHeader).includes(val)) {
+                    keywordCount++;
+                }
+            });
+        }
+        const hasSubHeader = keywordCount >= 2;
+
+        let headers = [];
+        let dataStart = hi + 1;
+
+        if (hasSubHeader) {
+            dataStart = hi + 2;
+            const row1 = rows[hi] || [];
+            const row2 = rows[hi+1] || [];
+            const len = Math.max(row1.length, row2.length);
+            for (let i = 0; i < len; i++) {
+                let parentHeader = "";
+                for (let j = i; j >= 0; j--) {
+                    if (row1[j] !== undefined && String(row1[j]).trim() !== "") {
+                        parentHeader = String(row1[j]).trim();
+                        break;
+                    }
+                }
+                const subHeader = row2[i] ? String(row2[i]).trim() : "";
+                if (subHeader) {
+                    headers.push(parentHeader ? `${parentHeader} - ${subHeader}` : subHeader);
+                } else {
+                    headers.push(parentHeader || `col${i+1}`);
+                }
+            }
+        } else {
+            headers = (rows[hi]||[]).map(c=>String(c||"").trim());
+        }
+
+        return rows.slice(dataStart).filter(r=>r.some(c=>String(c||"").trim()!=="")).map(r=>{
+            const o={};
+            headers.forEach((h,i)=>{
+                const value = r[i] ?? "";
+                const fallbackKey = `col${i+1}`;
+                const field = importFieldForHeader(h, i);
+                if (field) o[field] = value;
+                o[h || fallbackKey] = value;
+            });
+            return o;
+        });
+    }
+    async function readImportRows(file){
+        const ext=file.name.split(".").pop().toLowerCase();
+        if(ext==="csv") return rowsToObjects(parseCSV(await file.text()));
+        if(!window.XLSX) throw new Error("Excel library not loaded");
+        const wb=window.XLSX.read(await file.arrayBuffer(),{type:"array",cellDates:true});
+        const sn=wb.SheetNames.find(n=>normHeader(n).includes("students")||normHeader(n).includes("សិស្ស"))||wb.SheetNames[0];
+        const ws=wb.Sheets[sn];
+        const rows=window.XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:false,dateNF:"yyyy-mm-dd"});
+        return rowsToObjects(rows);
+    }
+    function setImporting(v){
+        els.importFileBtn.disabled=v;
+        els.importFileBtn.innerHTML=v?'<span class="spinner"></span><span>Import...</span>':'<ion-icon name="cloud-upload-outline"></ion-icon><span>Import</span>';
+    }
+    function assignCodes(students,start=1){
+        let n=Math.max(1,start);const used=new Set(students.map(s=>s.studentCode).filter(Boolean));
+        return students.map(s=>{
+            if(s.studentCode) return s;let code="";
+            do{code=`${STUDENT_CODE_PREFIX}-${String(n).padStart(4,"0")}`;n++;}while(used.has(code));
+            used.add(code);return {...s,studentCode:code};
+        });
+    }
+    async function importStudentObjects(rawStudents,label="Import"){
+        const accepted=[],skipped=[];
+        rawStudents.forEach(raw=>{
+            const s={...raw,studentName:String(raw.studentName||"").trim(),gender:normGender(raw.gender),dob:normDate(raw.dob),contact:String(raw.contact||"").trim()};
+            if(!s.studentName){skipped.push({reason:"missing",student:s});return;}
+            const dup=findDuplicate(s,"",[...allStudents,...accepted.map((i,idx)=>({id:`new-${idx}`,...i}))]);
+            if(dup){skipped.push({reason:dup.type,student:s});return;}
+            accepted.push(s);
+        });
+        const withCodes=assignCodes(accepted,allStudents.length+1);
+        const nowIso=new Date().toISOString();
+        const saved=withCodes.map((st,idx)=>{
+            const newId=`stu-${Date.now()}-${idx}-${Math.random().toString(36).substr(2,9)}`;
+            return {
+                id:newId,
+                ...st,
+                ...normStudentFields(st),
+                createdAt:nowIso,
+                updatedAt:nowIso
+            };
+        });
+        if(saved.length){
+            allStudents=[...saved,...allStudents];
+            saveToLocalStorage(allStudents);
+            await logHistory("imported",label,{total:saved.length,skipped:skipped.length});
+            await syncGoogleSheet("backup",{},"",saved);
+        }
+        return{accepted:saved,skipped};
+    }
+    async function importStudentsFromFile(file){
+        setImporting(true);
+        try{
+            const rows=await readImportRows(file);
+            const students=rows.map(normImportRow);
+            const result=await importStudentObjects(students,file.name);
+            if(!result.accepted.length){showToast(`មិនមានជួរណាបាន Import។ រំលង ${result.skipped.length}`,"warning");}
+            else{showToast(`Import ${result.accepted.length} នាក់។ រំលង ${result.skipped.length}`);await refreshStudents({reset:true});}
+        }catch(e){console.error("Import error:",e);showToast("Import មិនបាន","error");}
+        finally{setImporting(false);els.importFileInput.value="";}
+    }
+
+    // ===================== EXCEL TEMPLATE =====================
+    function downloadExcelTemplate() {
+        if(!window.XLSX){showToast("Excel library មិនទាន់ផ្ទុក","warning");return;}
+        const wb=window.XLSX.utils.book_new();
+        const students=[
+            ["ប្រព័ន្ធគ្រប់គ្រងសិស្ស – Template"],
+            ["ណែនាំ: បំពេញព័ត៌មានសិស្សម្នាក់ក្នុងមួយជួរ។"],
+            [],
+            STUDENT_TEMPLATE_TOP_HEADERS,
+            STUDENT_TEMPLATE_SUB_HEADERS,
+            STUDENT_TEMPLATE_EXAMPLE
+        ];
+        const ws=window.XLSX.utils.aoa_to_sheet(students);
+        ws["!merges"] = STUDENT_TEMPLATE_MERGES;
+        ws["!cols"] = STUDENT_TEMPLATE_COLS;
+        window.XLSX.utils.book_append_sheet(wb,ws,"Students");
+        window.XLSX.writeFile(wb,"student_template.xlsx");
+    }
+
+    // ===================== CSV DOWNLOAD =====================
+    function csvVal(v){return `"${String(v??"").replace(/"/g,'""')}"`;}
+    function downloadCSV(){
+        const rows=hasActiveFilters()?visibleStudents:allStudents;
+        if(!rows.length){showToast("មិនមានទិន្នន័យ","warning");return;}
+        const csvRows=[STUDENT_CSV_HEADERS.map(csvVal).join(",")];
+        rows.forEach(s=>csvRows.push(studentExportValues(s).map(csvVal).join(",")));
+        const blob=new Blob(["\uFEFF"+csvRows.join("\n")],{type:"text/csv;charset=utf-8;"});
+        const url=URL.createObjectURL(blob);const a=document.createElement("a");
+        a.href=url;a.download="student_list.csv";document.body.append(a);a.click();a.remove();URL.revokeObjectURL(url);
+        showToast(`ទាញយក CSV ${rows.length} នាក់`);
+    }
+
+    // ===================== INIT =====================
+    function handleStudentAction(e){
+        const btn=e.target.closest("button");if(!btn) return;
+        const id=btn.dataset.id;
+        if(btn.classList.contains("print-student-btn")) printStudent(id);
+        if(btn.classList.contains("edit-btn")) loadStudentIntoForm(id);
+        if(btn.classList.contains("delete-btn")) openDeleteModal(id);
+    }
+
+    function init(){
+        // Address
+        resetAddressGroup(pobGroup);resetAddressGroup(currentGroup);
+        setupAddressListeners(pobGroup,()=>{if(els.sameAddress.checked)syncCurrentFromBirth();});
+        setupAddressListeners(currentGroup);
+        els.sameAddress.addEventListener("change",()=>{
+            if(els.sameAddress.checked) syncCurrentFromBirth();
+            lockCurrentAddress(els.sameAddress.checked);
+        });
+
+        // Form
+        els.registrationForm.addEventListener("submit",handleFormSubmit);
+        els.clearBtn.addEventListener("click",resetForm);
+
+        // Filters
+        els.searchInput.addEventListener("input",applyFilters);
+        els.genderFilter.addEventListener("change",applyFilters);
+        els.classFilter.addEventListener("change",applyFilters);
+        els.schoolFilter.addEventListener("change",applyFilters);
+
+        // Table actions
+        els.studentList.addEventListener("click",handleStudentAction);
+        els.studentCards.addEventListener("click",handleStudentAction);
+
+        // Pagination
+        els.prevPageBtn.addEventListener("click",()=>{if(currentPageIndex>0)loadStudentsPage(currentPageIndex-1);});
+        els.nextPageBtn.addEventListener("click",()=>{if(hasNextPage)loadStudentsPage(currentPageIndex+1);});
+        els.pageSizeSelect.addEventListener("change",()=>{pageSize=Number(els.pageSizeSelect.value);refreshStudents({reset:true});});
+
+        // Import/Export
+        els.importFileBtn.addEventListener("click",()=>els.importFileInput.click());
+        els.importFileInput.addEventListener("change",()=>{const f=els.importFileInput.files?.[0];if(f)importStudentsFromFile(f);});
+        els.downloadTemplateBtn.addEventListener("click",downloadExcelTemplate);
+        els.printListBtn.addEventListener("click",printStudentList);
+        els.downloadCsvBtn.addEventListener("click",downloadCSV);
+        els.deleteAllBtn.addEventListener("click",openDeleteAllModal);
+
+        // Backup
+        els.backupNowBtn.addEventListener("click",backupAllStudents);
+
+        // Sheet modal
+        els.sheetSettingsBtn.addEventListener("click",openSheetModal);
+        els.cancelSheetUrlBtn.addEventListener("click",closeSheetModal);
+        els.saveSheetUrlBtn.addEventListener("click",saveSheetUrl);
+        els.clearSheetUrlBtn.addEventListener("click",()=>{
+            els.sheetUrlInput.value="";localStorage.removeItem(GOOGLE_SCRIPT_STORAGE_KEY);
+            closeSheetModal();showToast("បានសម្អាត Google Sheet URL");
+        });
+        els.sheetModal.addEventListener("click",e=>{if(e.target===els.sheetModal)closeSheetModal();});
+        els.sheetUrlInput.addEventListener("keydown",e=>{if(e.key==="Enter")saveSheetUrl();});
+
+        // Delete modal
+        els.cancelDeleteBtn.addEventListener("click",closeDeleteModal);
+        els.confirmDeleteBtn.addEventListener("click",handleDeleteStudent);
+        els.deleteModal.addEventListener("click",e=>{if(e.target===els.deleteModal)closeDeleteModal();});
+
+        // Delete all modal
+        els.cancelDeleteAllBtn.addEventListener("click",closeDeleteAllModal);
+        els.confirmDeleteAllBtn.addEventListener("click",handleDeleteAllStudents);
+        els.deleteAllModal.addEventListener("click",e=>{if(e.target===els.deleteAllModal)closeDeleteAllModal();});
+
+        // Theme
+        els.themeToggle.addEventListener("click",()=>{
+            const next=document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark";
+            document.documentElement.setAttribute("data-theme",next);
+            localStorage.setItem("studentAppTheme",next);
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener("keydown",e=>{
+            if(e.key==="Escape"){
+                if(els.deleteModal.classList.contains("is-open")){closeDeleteModal();return;}
+                if(els.deleteAllModal.classList.contains("is-open")){closeDeleteAllModal();return;}
+                if(els.sheetModal.classList.contains("is-open")){closeSheetModal();return;}
+                if(els.editingId.value){resetForm();return;}
+            }
+            if(e.ctrlKey&&e.key==="Enter"&&document.activeElement&&els.registrationForm.contains(document.activeElement)){
+                els.registrationForm.requestSubmit();
+            }
+        });
+
+        // Local Offline Setup
+        setStatus("ឡូកាល់ (Offline)", "connected");
+        const logs = loadHistoryFromLocalStorage();
+        renderHistory(logs);
+        refreshStudents({ reset: true });
+    }
+
+    document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
