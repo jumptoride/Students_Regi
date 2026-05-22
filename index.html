@@ -970,6 +970,14 @@
         .modal-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; }
         .modal-desc { font-size: .9rem; color: var(--muted); line-height: 1.6; }
 
+        .storage-fields {
+            display: grid;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .storage-fields.is-hidden { display: none; }
+
         .modal-footer {
             display: flex;
             justify-content: flex-end;
@@ -1530,15 +1538,15 @@
 
             <!-- Sync group -->
             <div class="action-group">
-                <button id="sheet-settings-btn" class="btn btn-ghost" type="button" title="Google Sheet Settings">
+                <button id="sheet-settings-btn" class="btn btn-ghost" type="button" title="Cloud Storage Settings">
                     <ion-icon name="grid-outline" aria-hidden="true"></ion-icon>
-                    <span>Sheet</span>
+                    <span>Storage</span>
                 </button>
-                <button id="load-sheet-btn" class="btn btn-ghost" type="button" title="Load from Google Sheet">
+                <button id="load-sheet-btn" class="btn btn-ghost" type="button" title="Load from Cloud Storage">
                     <ion-icon name="cloud-download-outline" aria-hidden="true"></ion-icon>
                     <span>Load</span>
                 </button>
-                <button id="backup-now-btn" class="btn btn-ghost" type="button" title="Backup to Google Sheet">
+                <button id="backup-now-btn" class="btn btn-ghost" type="button" title="Backup to Cloud Storage">
                     <ion-icon name="cloud-done-outline" aria-hidden="true"></ion-icon>
                     <span>Backup</span>
                 </button>
@@ -2003,26 +2011,46 @@
     </div>
 </div>
 
-<!-- ======================== GOOGLE SHEET MODAL ======================== -->
+<!-- ======================== CLOUD STORAGE MODAL ======================== -->
 <div id="sheet-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
     <div class="modal-dialog">
         <div class="modal-body">
             <div class="modal-icon modal-icon-primary" aria-hidden="true">
                 <ion-icon name="grid-outline"></ion-icon>
             </div>
-            <h2 id="sheet-title" class="modal-title">ភ្ជាប់ Google Sheet</h2>
+            <h2 id="sheet-title" class="modal-title">ភ្ជាប់ Storage</h2>
             <p class="modal-desc">
-                បញ្ចូល Apps Script Web App URL ដើម្បីឱ្យ computer និង phone ប្រើទិន្នន័យក្នុង Google Sheet តែមួយ។
+                ជ្រើសរើស Supabase ឬ Google Sheet ដើម្បីឱ្យ computer និង phone ប្រើទិន្នន័យតែមួយ។
             </p>
             <div class="field" style="margin-top:16px">
-                <label for="sheet-url-input">Apps Script Web App URL</label>
-                <input id="sheet-url-input" type="url"
-                       placeholder="https://script.google.com/macros/s/.../exec"
-                       style="margin-top:4px">
+                <label for="storage-provider-select">Storage provider</label>
+                <select id="storage-provider-select" style="margin-top:4px">
+                    <option value="supabase">Supabase</option>
+                    <option value="google-sheet">Google Sheet</option>
+                </select>
+            </div>
+            <div id="supabase-settings-fields" class="storage-fields">
+                <div class="field">
+                    <label for="supabase-url-input">Supabase Project URL</label>
+                    <input id="supabase-url-input" type="url"
+                           placeholder="https://xxxx.supabase.co">
+                </div>
+                <div class="field">
+                    <label for="supabase-key-input">Supabase anon public key</label>
+                    <input id="supabase-key-input" type="password"
+                           placeholder="eyJhbGciOiJIUzI1NiIs...">
+                </div>
+            </div>
+            <div id="google-sheet-settings-fields" class="storage-fields is-hidden">
+                <div class="field">
+                    <label for="sheet-url-input">Apps Script Web App URL</label>
+                    <input id="sheet-url-input" type="url"
+                           placeholder="https://script.google.com/macros/s/.../exec">
+                </div>
             </div>
         </div>
         <div class="modal-footer">
-            <button id="clear-sheet-url-btn" class="btn btn-ghost" type="button">សម្អាត URL</button>
+            <button id="clear-sheet-url-btn" class="btn btn-ghost" type="button">សម្អាត Storage</button>
             <button id="cancel-sheet-url-btn" class="btn btn-ghost" type="button">បោះបង់</button>
             <button id="save-sheet-url-btn" class="btn btn-primary" type="button">
                 <ion-icon name="save-outline" aria-hidden="true"></ion-icon>
@@ -2045,7 +2073,7 @@
     <div class="sheet-body">
         <button id="m-sheet-settings-btn" class="sheet-menu-item" type="button">
             <ion-icon name="grid-outline" aria-hidden="true"></ion-icon>
-            <span>Sheet</span>
+            <span>Storage</span>
         </button>
         <button id="m-load-sheet-btn" class="sheet-menu-item" type="button">
             <ion-icon name="cloud-download-outline" aria-hidden="true"></ion-icon>
@@ -2096,10 +2124,40 @@
 <script type="module">
     const LOCAL_STUDENTS_KEY = "studentRegistrationOfflineStudents";
     const LOCAL_HISTORY_KEY  = "studentRegistrationOfflineHistory";
+    const SUPABASE_PROVIDER = "supabase";
+    const GOOGLE_SHEET_PROVIDER = "google-sheet";
+    const CLOUD_PROVIDER_STORAGE_KEY = "studentRegistrationCloudProvider";
+    const DEFAULT_SUPABASE_URL = "";
+    const SUPABASE_URL_STORAGE_KEY = "studentRegistrationSupabaseUrl";
+    const SUPABASE_ANON_KEY_STORAGE_KEY = "studentRegistrationSupabaseAnonKey";
     const DEFAULT_GOOGLE_SCRIPT_URL = "";
     const GOOGLE_SCRIPT_STORAGE_KEY  = "studentRegistrationGoogleScriptUrl";
     const BACKUP_TIME_STORAGE_KEY    = "studentRegistrationLastBackupAt";
     const STUDENT_CODE_PREFIX        = "STU";
+
+    const SUPABASE_FIELD_MAP = {
+        id: "id",
+        studentCode: "student_code",
+        studentName: "student_name",
+        gender: "gender",
+        dob: "dob",
+        className: "class_name",
+        fromSchool: "from_school",
+        pobVillage: "pob_village",
+        pobCommune: "pob_commune",
+        pobDistrict: "pob_district",
+        pobProvince: "pob_province",
+        contact: "contact",
+        fatherName: "father_name",
+        motherName: "mother_name",
+        currentVillage: "current_village",
+        currentCommune: "current_commune",
+        currentDistrict: "current_district",
+        currentProvince: "current_province",
+        gpa: "gpa",
+        createdAt: "created_at",
+        updatedAt: "updated_at"
+    };
 
     // ===================== LOCAL STORAGE DB HANDLERS =====================
     function loadFromLocalStorage() {
@@ -2325,6 +2383,11 @@
         historyLog: document.getElementById("history-log"),
         sheetSettingsBtn: document.getElementById("sheet-settings-btn"),
         sheetModal: document.getElementById("sheet-modal"),
+        storageProviderSelect: document.getElementById("storage-provider-select"),
+        supabaseSettingsFields: document.getElementById("supabase-settings-fields"),
+        googleSheetSettingsFields: document.getElementById("google-sheet-settings-fields"),
+        supabaseUrlInput: document.getElementById("supabase-url-input"),
+        supabaseKeyInput: document.getElementById("supabase-key-input"),
         sheetUrlInput: document.getElementById("sheet-url-input"),
         clearSheetUrlBtn: document.getElementById("clear-sheet-url-btn"),
         cancelSheetUrlBtn: document.getElementById("cancel-sheet-url-btn"),
@@ -2528,31 +2591,82 @@
         els.statusText.textContent = text;
     }
 
-    // ===================== GOOGLE SHEET =====================
+    // ===================== CLOUD STORAGE =====================
+    function normalizeSupabaseUrl(url) { return String(url || "").trim().replace(/\/+$/, ""); }
+    function getSupabaseUrl() { return normalizeSupabaseUrl(localStorage.getItem(SUPABASE_URL_STORAGE_KEY) || DEFAULT_SUPABASE_URL); }
+    function getSupabaseAnonKey() { return String(localStorage.getItem(SUPABASE_ANON_KEY_STORAGE_KEY) || "").trim(); }
+    function hasSupabaseConfig() { return Boolean(getSupabaseUrl() && getSupabaseAnonKey()); }
     function getGoogleScriptUrl() { return localStorage.getItem(GOOGLE_SCRIPT_STORAGE_KEY) || DEFAULT_GOOGLE_SCRIPT_URL; }
     function hasGoogleScriptUrl() { return Boolean(getGoogleScriptUrl()); }
+
+    function getCloudProvider() {
+        const saved = localStorage.getItem(CLOUD_PROVIDER_STORAGE_KEY);
+        if ([SUPABASE_PROVIDER, GOOGLE_SHEET_PROVIDER].includes(saved)) return saved;
+        if (hasSupabaseConfig()) return SUPABASE_PROVIDER;
+        if (hasGoogleScriptUrl()) return GOOGLE_SHEET_PROVIDER;
+        return SUPABASE_PROVIDER;
+    }
+
+    function currentStorageName() {
+        return getCloudProvider() === SUPABASE_PROVIDER ? "Supabase" : "Google Sheet";
+    }
+
+    function hasCloudStorageConfig() {
+        return getCloudProvider() === SUPABASE_PROVIDER ? hasSupabaseConfig() : hasGoogleScriptUrl();
+    }
 
     function rememberSheetUrlFromQuery() {
         try {
             const params = new URLSearchParams(window.location.search);
-            const url = params.get("sheet") || params.get("sheetUrl");
-            if (!url) return;
-            if (/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/i.test(url)) {
-                localStorage.setItem(GOOGLE_SCRIPT_STORAGE_KEY, url);
-                params.delete("sheet");
-                params.delete("sheetUrl");
+            const provider = params.get("storage") || params.get("provider");
+            const sheetUrl = params.get("sheet") || params.get("sheetUrl");
+            const supabaseUrl = params.get("supabaseUrl") || params.get("sbUrl");
+            const supabaseKey = params.get("supabaseKey") || params.get("sbKey");
+            let changed = false;
+
+            if (provider && [SUPABASE_PROVIDER, GOOGLE_SHEET_PROVIDER].includes(provider)) {
+                localStorage.setItem(CLOUD_PROVIDER_STORAGE_KEY, provider);
+                params.delete("storage"); params.delete("provider");
+                changed = true;
+            }
+            if (sheetUrl && /^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/i.test(sheetUrl)) {
+                localStorage.setItem(GOOGLE_SCRIPT_STORAGE_KEY, sheetUrl);
+                localStorage.setItem(CLOUD_PROVIDER_STORAGE_KEY, GOOGLE_SHEET_PROVIDER);
+                params.delete("sheet"); params.delete("sheetUrl");
+                changed = true;
+            }
+            if (supabaseUrl && /^https:\/\/.+/i.test(supabaseUrl)) {
+                localStorage.setItem(SUPABASE_URL_STORAGE_KEY, normalizeSupabaseUrl(supabaseUrl));
+                localStorage.setItem(CLOUD_PROVIDER_STORAGE_KEY, SUPABASE_PROVIDER);
+                params.delete("supabaseUrl"); params.delete("sbUrl");
+                changed = true;
+            }
+            if (supabaseKey) {
+                localStorage.setItem(SUPABASE_ANON_KEY_STORAGE_KEY, supabaseKey);
+                localStorage.setItem(CLOUD_PROVIDER_STORAGE_KEY, SUPABASE_PROVIDER);
+                params.delete("supabaseKey"); params.delete("sbKey");
+                changed = true;
+            }
+            if (changed) {
                 const cleanQuery = params.toString();
                 const cleanUrl = `${window.location.pathname}${cleanQuery ? `?${cleanQuery}` : ""}${window.location.hash}`;
                 window.history.replaceState({}, "", cleanUrl);
             }
         } catch(e) {
-            console.warn("Cannot read sheet URL from query:", e);
+            console.warn("Cannot read storage config from query:", e);
         }
     }
 
+    function updateStorageFieldsVisibility() {
+        const provider = els.storageProviderSelect?.value || getCloudProvider();
+        els.supabaseSettingsFields?.classList.toggle("is-hidden", provider !== SUPABASE_PROVIDER);
+        els.googleSheetSettingsFields?.classList.toggle("is-hidden", provider !== GOOGLE_SHEET_PROVIDER);
+    }
+
     function setCloudControlsLoading(loading) {
-        els.loadSheetBtn.disabled = loading || !hasGoogleScriptUrl();
-        els.backupNowBtn.disabled = loading || !hasGoogleScriptUrl();
+        const configured = hasCloudStorageConfig();
+        els.loadSheetBtn.disabled = loading || !configured;
+        els.backupNowBtn.disabled = loading || !configured;
         if (loading) {
             els.loadSheetBtn.innerHTML = '<span class="spinner"></span><span>Load...</span>';
             els.backupNowBtn.innerHTML = '<span class="spinner"></span><span>Sync...</span>';
@@ -2563,22 +2677,55 @@
     }
 
     function openSheetModal() {
+        els.storageProviderSelect.value = getCloudProvider();
+        els.supabaseUrlInput.value = getSupabaseUrl();
+        els.supabaseKeyInput.value = getSupabaseAnonKey();
         els.sheetUrlInput.value = getGoogleScriptUrl();
+        updateStorageFieldsVisibility();
         els.sheetModal.classList.add("is-open");
-        els.sheetUrlInput.focus();
+        setTimeout(() => {
+            if (els.storageProviderSelect.value === SUPABASE_PROVIDER) els.supabaseUrlInput.focus();
+            else els.sheetUrlInput.focus();
+        }, 0);
     }
     function closeSheetModal() { els.sheetModal.classList.remove("is-open"); }
 
-    function saveSheetUrl() {
-        const v = els.sheetUrlInput.value.trim();
-        if (!v) {
+    function clearCloudSettings(provider=getCloudProvider()) {
+        if (provider === SUPABASE_PROVIDER) {
+            localStorage.removeItem(SUPABASE_URL_STORAGE_KEY);
+            localStorage.removeItem(SUPABASE_ANON_KEY_STORAGE_KEY);
+        } else {
             localStorage.removeItem(GOOGLE_SCRIPT_STORAGE_KEY);
+        }
+        localStorage.removeItem(CLOUD_PROVIDER_STORAGE_KEY);
+        setCloudControlsLoading(false);
+        setStatus("ឡូកាល់ (Offline)", "connected");
+    }
+
+    function saveSheetUrl() {
+        const provider = els.storageProviderSelect.value;
+        localStorage.setItem(CLOUD_PROVIDER_STORAGE_KEY, provider);
+        if (provider === SUPABASE_PROVIDER) {
+            const url = normalizeSupabaseUrl(els.supabaseUrlInput.value);
+            const key = els.supabaseKeyInput.value.trim();
+            if (!/^https:\/\/.+/i.test(url)) {
+                showToast("Supabase URL ត្រូវតែចាប់ផ្តើមដោយ https://", "warning");
+                return;
+            }
+            if (!key) {
+                showToast("សូមបញ្ចូល Supabase anon key", "warning");
+                return;
+            }
+            localStorage.setItem(SUPABASE_URL_STORAGE_KEY, url);
+            localStorage.setItem(SUPABASE_ANON_KEY_STORAGE_KEY, key);
             closeSheetModal();
             setCloudControlsLoading(false);
-            setStatus("ឡូកាល់ (Offline)", "connected");
-            showToast("បានផ្ដាច់ Google Sheet");
+            showToast("បានរក្សាទុក Supabase Storage");
+            loadStudentsFromCloudStorage({ silent:false, keepLocalWhenCloudEmpty:true });
             return;
         }
+
+        const v = els.sheetUrlInput.value.trim();
         if (!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/i.test(v)) {
             showToast("URL ត្រូវតែជា Apps Script URL ដែលបញ្ចប់ /exec", "warning");
             return;
@@ -2587,23 +2734,106 @@
         closeSheetModal();
         setCloudControlsLoading(false);
         showToast("បានរក្សាទុក Google Sheet URL");
-        loadStudentsFromGoogleSheet({ silent:false, keepLocalWhenCloudEmpty:true });
+        loadStudentsFromCloudStorage({ silent:false, keepLocalWhenCloudEmpty:true });
+    }
+
+    async function supabaseFetch(path, options={}) {
+        const url = getSupabaseUrl();
+        const key = getSupabaseAnonKey();
+        if (!url || !key) throw new Error("Missing Supabase config");
+        const headers = {
+            "apikey": key,
+            "Authorization": `Bearer ${key}`,
+            "Content-Type": "application/json",
+            ...(options.headers || {})
+        };
+        const response = await fetch(`${url}/rest/v1/${path}`, {
+            method: options.method || "GET",
+            mode: "cors",
+            cache: "no-cache",
+            headers,
+            body: options.body
+        });
+        const text = await response.text();
+        if (!response.ok) throw new Error(text || `Supabase HTTP ${response.status}`);
+        return text ? JSON.parse(text) : null;
+    }
+
+    function supabaseStudentToDbRow(student={}, studentId="") {
+        const id = student.id || student.recordId || studentId || student.studentCode || student.studentId || `stu-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const normalized = normalizeCloudStudent({ ...student, id, studentCode: student.studentCode || student.studentId || "" });
+        const row = {};
+        Object.entries(SUPABASE_FIELD_MAP).forEach(([field, column]) => {
+            row[column] = normalized[field] ?? "";
+        });
+        row.id = id;
+        row.student_code = normalized.studentCode || "";
+        row.created_at = normalized.createdAt || new Date().toISOString();
+        row.updated_at = new Date().toISOString();
+        return row;
+    }
+
+    function normalizeSupabaseRow(row={}, idx=0) {
+        const student = {};
+        Object.entries(SUPABASE_FIELD_MAP).forEach(([field, column]) => {
+            student[field] = row[column] ?? "";
+        });
+        return normalizeCloudStudent(student, idx);
+    }
+
+    async function readSupabaseStudents() {
+        const rows = await supabaseFetch("students?select=*&order=class_name.asc,student_name.asc");
+        return Array.isArray(rows) ? rows.map(normalizeSupabaseRow).filter(s => s.studentName) : [];
+    }
+
+    async function syncSupabaseStorage(action, student={}, studentId="", students=null) {
+        if (!hasSupabaseConfig()) return false;
+        if (action === "backup") {
+            await supabaseFetch("students?id=not.is.null", { method:"DELETE", headers:{ "Prefer":"return=minimal" } });
+            const rows = Array.isArray(students) ? students.map(s => supabaseStudentToDbRow(s, studentDisplayId(s, s.id))) : [];
+            if (rows.length) {
+                await supabaseFetch("students", { method:"POST", headers:{ "Prefer":"return=minimal" }, body:JSON.stringify(rows) });
+            }
+        } else if (action === "upsert") {
+            const row = supabaseStudentToDbRow(student, studentId);
+            await supabaseFetch("students?on_conflict=id", {
+                method:"POST",
+                headers:{ "Prefer":"resolution=merge-duplicates,return=minimal" },
+                body:JSON.stringify(row)
+            });
+        } else if (action === "delete") {
+            const key = encodeURIComponent(String(studentId || student.studentCode || student.id || "").trim());
+            if (key) await supabaseFetch(`students?or=(id.eq.${key},student_code.eq.${key})`, { method:"DELETE", headers:{ "Prefer":"return=minimal" } });
+        }
+        if (["upsert","delete","backup"].includes(action)) {
+            localStorage.setItem(BACKUP_TIME_STORAGE_KEY, new Date().toISOString());
+        }
+        return true;
     }
 
     async function syncGoogleSheet(action, student={}, studentId="", students=null) {
         const url = getGoogleScriptUrl();
-        if (!url) return;
+        if (!url) return false;
+        const body = { action, studentId, student: {...student, studentId}, sentAt: new Date().toISOString() };
+        if (Array.isArray(students)) {
+            body.students = students.map(i => ({ studentId: studentDisplayId(i, i.id), student: {...i, studentId: studentDisplayId(i,i.id)} }));
+        }
+        await fetch(url, { method:"POST", mode:"no-cors", cache:"no-cache", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(body), redirect:"follow" });
+        if (["upsert","delete","backup"].includes(action)) {
+            localStorage.setItem(BACKUP_TIME_STORAGE_KEY, new Date().toISOString());
+        }
+        return true;
+    }
+
+    async function syncCloudStorage(action, student={}, studentId="", students=null) {
         try {
-            const body = { action, studentId, student: {...student, studentId}, sentAt: new Date().toISOString() };
-            if (Array.isArray(students)) {
-                body.students = students.map(i => ({ studentId: studentDisplayId(i, i.id), student: {...i, studentId: studentDisplayId(i,i.id)} }));
+            if (getCloudProvider() === SUPABASE_PROVIDER) {
+                return await syncSupabaseStorage(action, student, studentId, students);
             }
-            await fetch(url, { method:"POST", mode:"no-cors", cache:"no-cache", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(body), redirect:"follow" });
-            if (["upsert","delete","backup"].includes(action)) {
-                localStorage.setItem(BACKUP_TIME_STORAGE_KEY, new Date().toISOString());
-            }
+            return await syncGoogleSheet(action, student, studentId, students);
         } catch(e) {
-            console.error("Google Sheet sync error:", e);
+            console.error(`${currentStorageName()} sync error:`, e);
+            return false;
         }
     }
 
@@ -2655,10 +2885,43 @@
             gender: normGender(raw.gender),
             dob: normDate(raw.dob),
             contact: String(raw.contact || "").trim(),
-            createdAt: raw.createdAt || raw.sentAt || new Date().toISOString(),
-            updatedAt: raw.updatedAt || raw.sentAt || new Date().toISOString()
+            createdAt: raw.createdAt || raw.created_at || raw.sentAt || new Date().toISOString(),
+            updatedAt: raw.updatedAt || raw.updated_at || raw.sentAt || new Date().toISOString()
         };
         return { ...student, ...normStudentFields(student) };
+    }
+
+    async function loadStudentsFromSupabase({ silent=false, keepLocalWhenCloudEmpty=true }={}) {
+        if (!hasSupabaseConfig()) {
+            setStatus("ឡូកាល់ (Offline)", "connected");
+            setCloudControlsLoading(false);
+            if (!silent) showToast("សូមភ្ជាប់ Supabase URL និង anon key ជាមុន","warning");
+            return false;
+        }
+        setCloudControlsLoading(true);
+        setStatus("កំពុង Load ពី Supabase...", "");
+        try {
+            const cloudStudents = await readSupabaseStudents();
+            if (!cloudStudents.length && keepLocalWhenCloudEmpty && allStudents.length) {
+                setStatus("Supabase ទទេ - រក្សាទុក Local", "connected");
+                if (!silent) showToast("Supabase ទទេ។ ទិន្នន័យក្នុង browser ត្រូវបានរក្សាទុក","warning");
+                return false;
+            }
+            allStudents = cloudStudents;
+            saveToLocalStorage(allStudents);
+            localStorage.setItem(BACKUP_TIME_STORAGE_KEY, new Date().toISOString());
+            await refreshStudents({ reset:true, source:"memory" });
+            setStatus("Supabase", "connected");
+            if (!silent) showToast(`Load ពី Supabase ${allStudents.length} នាក់`);
+            return true;
+        } catch(e) {
+            console.error("Supabase load error:", e);
+            setStatus("Supabase មិនបានភ្ជាប់", "error");
+            if (!silent) showToast("Load ពី Supabase មិនបាន","error");
+            return false;
+        } finally {
+            setCloudControlsLoading(false);
+        }
     }
 
     async function loadStudentsFromGoogleSheet({ silent=false, keepLocalWhenCloudEmpty=true }={}) {
@@ -2695,6 +2958,12 @@
         } finally {
             setCloudControlsLoading(false);
         }
+    }
+
+    function loadStudentsFromCloudStorage(options={}) {
+        return getCloudProvider() === SUPABASE_PROVIDER
+            ? loadStudentsFromSupabase(options)
+            : loadStudentsFromGoogleSheet(options);
     }
 
     // ===================== ADDRESS CASCADE =====================
@@ -2969,7 +3238,7 @@
                 }
                 saveToLocalStorage(allStudents);
                 await logHistory("edited", payload.studentName, { studentId: payload.studentCode, recordId: editingId });
-                await syncGoogleSheet("upsert", {...payload, recordId: editingId}, payload.studentCode||editingId);
+                await syncCloudStorage("upsert", {...payload, recordId: editingId}, payload.studentCode||editingId);
                 showToast("បានកែសម្រួលព័ត៌មានសិស្ស");
             } else {
                 payload.studentCode = await generateStudentCode();
@@ -2984,7 +3253,7 @@
                 allStudents.unshift(newStudent);
                 saveToLocalStorage(allStudents);
                 await logHistory("added", payload.studentName, { studentId: payload.studentCode, recordId: newId, ...payload });
-                await syncGoogleSheet("upsert", {...payload, recordId: newId}, payload.studentCode);
+                await syncCloudStorage("upsert", {...payload, recordId: newId}, payload.studentCode);
                 showToast(`បានបន្ថែម ${payload.studentName} (${payload.studentCode})`);
             }
             resetForm();
@@ -3017,7 +3286,7 @@
             allStudents = allStudents.filter(i => i.id !== studentToDeleteId);
             saveToLocalStorage(allStudents);
             await logHistory("deleted", name, { studentId: studentDisplayId(s, studentToDeleteId), recordId: studentToDeleteId });
-            await syncGoogleSheet("delete", s||{studentName:name}, studentDisplayId(s, studentToDeleteId));
+            await syncCloudStorage("delete", s||{studentName:name}, studentDisplayId(s, studentToDeleteId));
             closeDeleteModal();
             showToast("បានលុបសិស្ស");
             if (els.editingId.value === studentToDeleteId) resetForm();
@@ -3056,7 +3325,7 @@
             allStudents = [];
             saveToLocalStorage(allStudents);
             await logHistory("cleared", "ទិន្នន័យសិស្សទាំងអស់", { total: count });
-            await syncGoogleSheet("backup", {}, "", []);
+            await syncCloudStorage("backup", {}, "", []);
             closeDeleteAllModal();
             resetForm();
             await refreshStudents({ reset: true, source:"memory" });
@@ -3387,16 +3656,17 @@
     async function backupAllStudents() {
         setBackupLoading(true);
         try {
-            if (!hasGoogleScriptUrl()) {
-                showToast("សូមភ្ជាប់ Google Sheet URL ជាមុន","warning");
+            if (!hasCloudStorageConfig()) {
+                showToast("សូមភ្ជាប់ Storage ជាមុន","warning");
                 openSheetModal();
                 return;
             }
-            await syncGoogleSheet("backup", {}, "", allStudents);
+            const ok = await syncCloudStorage("backup", {}, "", allStudents);
+            if (!ok) throw new Error(`${currentStorageName()} backup failed`);
             localStorage.setItem(BACKUP_TIME_STORAGE_KEY, new Date().toISOString());
-            await logHistory("backup", "Google Sheet", { total: allStudents.length });
-            showToast(`Backup ${allStudents.length} នាក់ ទៅ Google Sheet`);
-            setStatus("Google Sheet", "connected");
+            await logHistory("backup", currentStorageName(), { total: allStudents.length });
+            showToast(`Backup ${allStudents.length} នាក់ ទៅ ${currentStorageName()}`);
+            setStatus(currentStorageName(), "connected");
         } catch(e) {
             console.error("Backup error:", e);
             showToast("Backup មិនបាន","error");
@@ -3734,7 +4004,7 @@
             allStudents=[...saved,...allStudents];
             saveToLocalStorage(allStudents);
             await logHistory("imported",label,{total:saved.length,skipped:skipped.length});
-            await syncGoogleSheet("backup",{},"",allStudents);
+            await syncCloudStorage("backup",{},"",allStudents);
         }
         return{accepted:saved,skipped};
     }
@@ -3829,21 +4099,25 @@
         els.deleteAllBtn.addEventListener("click",openDeleteAllModal);
 
         // Backup
-        els.loadSheetBtn.addEventListener("click",()=>loadStudentsFromGoogleSheet({ silent:false, keepLocalWhenCloudEmpty:true }));
+        els.loadSheetBtn.addEventListener("click",()=>loadStudentsFromCloudStorage({ silent:false, keepLocalWhenCloudEmpty:true }));
         els.backupNowBtn.addEventListener("click",backupAllStudents);
 
         // Sheet modal
         els.sheetSettingsBtn.addEventListener("click",openSheetModal);
         els.cancelSheetUrlBtn.addEventListener("click",closeSheetModal);
         els.saveSheetUrlBtn.addEventListener("click",saveSheetUrl);
+        els.storageProviderSelect.addEventListener("change",updateStorageFieldsVisibility);
         els.clearSheetUrlBtn.addEventListener("click",()=>{
-            els.sheetUrlInput.value="";localStorage.removeItem(GOOGLE_SCRIPT_STORAGE_KEY);
-            setCloudControlsLoading(false);
-            setStatus("ឡូកាល់ (Offline)", "connected");
-            closeSheetModal();showToast("បានសម្អាត Google Sheet URL");
+            clearCloudSettings(els.storageProviderSelect.value);
+            els.sheetUrlInput.value="";
+            els.supabaseUrlInput.value="";
+            els.supabaseKeyInput.value="";
+            closeSheetModal();showToast("បានសម្អាត Storage");
         });
         els.sheetModal.addEventListener("click",e=>{if(e.target===els.sheetModal)closeSheetModal();});
         els.sheetUrlInput.addEventListener("keydown",e=>{if(e.key==="Enter")saveSheetUrl();});
+        els.supabaseUrlInput.addEventListener("keydown",e=>{if(e.key==="Enter")saveSheetUrl();});
+        els.supabaseKeyInput.addEventListener("keydown",e=>{if(e.key==="Enter")saveSheetUrl();});
 
         // Delete modal
         els.cancelDeleteBtn.addEventListener("click",closeDeleteModal);
@@ -3918,11 +4192,11 @@
         // Local Offline Setup
         rememberSheetUrlFromQuery();
         setCloudControlsLoading(false);
-        setStatus(hasGoogleScriptUrl() ? "Google Sheet" : "ឡូកាល់ (Offline)", "connected");
+        setStatus(hasCloudStorageConfig() ? currentStorageName() : "ឡូកាល់ (Offline)", "connected");
         const logs = loadHistoryFromLocalStorage();
         renderHistory(logs);
         refreshStudents({ reset: true }).then(() => {
-            if (hasGoogleScriptUrl()) loadStudentsFromGoogleSheet({ silent:true, keepLocalWhenCloudEmpty:true });
+            if (hasCloudStorageConfig()) loadStudentsFromCloudStorage({ silent:true, keepLocalWhenCloudEmpty:true });
         });
     }
 

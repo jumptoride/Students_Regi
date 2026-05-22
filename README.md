@@ -17,6 +17,21 @@ Use `google-sheet-backend.gs` as the Apps Script backend:
 9. Open the app, click `Sheet`, paste the URL, and Save.
 10. On the computer, click `Backup` after import. On the phone, click `Load` or reopen the app.
 
+## Supabase sync
+
+Use `supabase-schema.sql` to create the Supabase table:
+
+1. Create a Supabase project.
+2. Open SQL Editor.
+3. Paste and run `supabase-schema.sql`.
+4. Go to Project Settings -> API.
+5. Copy `Project URL` and the `anon public` key.
+6. Open the app, click `Storage`.
+7. Choose `Supabase`, paste the URL and anon key, then Save.
+8. Click `Backup` on the computer after import. On the phone, click `Load` or reopen the app.
+
+This static app stores the anon key in the browser. The included policies allow app access from the public anon role for simple deployment. Use authenticated policies before storing sensitive production data.
+
 ## Google Sheet design
 
 The latest `google-sheet-backend.gs` formats the Google Sheet automatically when data is backed up:
