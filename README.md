@@ -17,6 +17,17 @@ Use `google-sheet-backend.gs` as the Apps Script backend:
 9. Open the app, click `Sheet`, paste the URL, and Save.
 10. On the computer, click `Backup` after import. On the phone, click `Load` or reopen the app.
 
+## Google Sheet design
+
+The latest `google-sheet-backend.gs` formats the Google Sheet automatically when data is backed up:
+
+- `Students`: app-compatible master data with Khmer headers, frozen rows, filters, hidden internal ID/timestamp columns, and styled rows.
+- `Dashboard`: summary totals by class, gender, school, phone completeness, and average GPA.
+- `By Class`: one grouped list separated by class.
+- `Class - <class>`: one auto-created tab for each class.
+
+If you already deployed Apps Script, paste the latest `google-sheet-backend.gs`, then use `Deploy -> Manage deployments -> Edit -> New version -> Deploy`. After that, open the app and click `Backup` to rebuild the designed sheets.
+
 ## GitHub Pages setup
 
 1. Create a GitHub repository.
