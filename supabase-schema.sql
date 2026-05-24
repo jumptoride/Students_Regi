@@ -21,9 +21,13 @@ create table if not exists public.students (
   current_district text,
   current_province text,
   gpa text,
+  photo text,
   created_at text,
   updated_at text
 );
+
+alter table public.students
+  add column if not exists photo text;
 
 create unique index if not exists students_student_code_unique
   on public.students (student_code)

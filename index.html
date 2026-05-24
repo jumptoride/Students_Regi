@@ -1690,6 +1690,107 @@
             .card-actions span { display: none; }
             .card-act-btn ion-icon { font-size: 1.2rem; }
         }
+
+        /* ========================
+           PHOTO UPLOAD & WEBCAM
+        ======================== */
+        .photo-upload-wrap {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .photo-preview {
+            width: 100px;
+            height: 130px;
+            border-radius: var(--radius-sm);
+            border: 2px dashed var(--border-strong);
+            background: var(--surface-3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            flex-shrink: 0;
+            background-color: var(--surface-2);
+        }
+        .photo-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .photo-preview ion-icon {
+            font-size: 2rem;
+            color: var(--muted-light);
+        }
+        .photo-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+        }
+        .photo-actions .btn {
+            width: 100%;
+            justify-content: flex-start;
+        }
+        .cam-modal .modal-dialog {
+            width: min(520px, 100%);
+        }
+        .cam-preview-box {
+            width: 100%;
+            aspect-ratio: 4/3;
+            background: #000;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 14px;
+        }
+        .cam-preview-box video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+        .cam-overlay-guide {
+            position: absolute;
+            inset: 10%;
+            border: 2px dashed rgba(255,255,255,0.5);
+            border-radius: var(--radius-sm);
+            pointer-events: none;
+        }
+        .bg-processing-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: .9rem;
+            font-weight: 600;
+            z-index: 10;
+        }
+        .student-photo-thumbnail {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            object-fit: cover;
+            border: 1px solid var(--border);
+        }
+        @media (max-width: 520px) {
+            .photo-upload-wrap {
+                align-items: stretch;
+            }
+            .photo-preview {
+                width: 86px;
+                height: 112px;
+            }
+            .photo-actions .btn {
+                min-height: 42px;
+                padding: 0 10px;
+                font-size: .84rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1845,6 +1946,33 @@
                 <input type="hidden" id="editing-id" value="">
 
                 <div class="form-body">
+
+                    <!-- Section: Student Photo -->
+                    <div class="form-section">
+                        <div class="section-header" role="button" tabindex="0" aria-expanded="true"
+                             onclick="toggleSection(this)" onkeydown="if(event.key==='Enter')toggleSection(this)">
+                            <div class="section-icon"><ion-icon name="camera-outline"></ion-icon></div>
+                            <span class="section-title">រូបថតសិស្ស</span>
+                            <span class="section-chevron"><ion-icon name="chevron-down-outline"></ion-icon></span>
+                        </div>
+                        <div class="section-body">
+                            <div class="photo-upload-wrap">
+                                <div class="photo-preview" id="photoPreviewBox">
+                                    <ion-icon name="person-outline"></ion-icon>
+                                </div>
+                                <div class="photo-actions">
+                                    <button id="open-camera-btn" type="button" class="btn btn-primary">
+                                        <ion-icon name="camera"></ion-icon> ថតរូបផ្ទាល់
+                                    </button>
+                                    <button id="choose-photo-btn" type="button" class="btn btn-ghost">
+                                        <ion-icon name="folder-open-outline"></ion-icon> ជ្រើសរើសរូបថត
+                                    </button>
+                                    <input type="file" id="photoUploadInput" accept="image/*" class="hidden-input">
+                                    <input type="hidden" id="studentPhotoData" name="photo">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- Section: Student Info -->
                     <div class="form-section">
@@ -2143,6 +2271,30 @@
 
 </main><!-- end .app -->
 
+<!-- ======================== CAMERA MODAL ======================== -->
+<div id="camera-modal" class="modal cam-modal" role="dialog" aria-modal="true" aria-labelledby="camera-title">
+    <div class="modal-dialog">
+        <div class="modal-body">
+            <h2 id="camera-title" class="modal-title">ថតរូបផ្ទាល់</h2>
+            <div class="cam-preview-box">
+                <video id="camVideo" autoplay playsinline></video>
+                <div class="cam-overlay-guide"></div>
+                <div id="camProcessingOverlay" class="bg-processing-overlay is-hidden">
+                    <div class="spinner"></div>
+                    <div class="processing-text" style="margin-top: 10px;">កំពុងរៀបចំរូបថត...</div>
+                </div>
+            </div>
+            <p class="modal-desc" style="text-align: center; font-size: 0.8rem;">សូមដាក់មុខឲ្យចំប្រអប់កណ្តាល</p>
+        </div>
+        <div class="modal-footer">
+            <button id="cancel-cam-btn" class="btn btn-ghost" type="button">បោះបង់</button>
+            <button id="capture-cam-btn" class="btn btn-primary" type="button">
+                <ion-icon name="camera"></ion-icon> ថតរូប
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- ======================== DELETE MODAL ======================== -->
 <div id="delete-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="delete-title">
     <div class="modal-dialog">
@@ -2338,6 +2490,7 @@
         currentDistrict: "current_district",
         currentProvince: "current_province",
         gpa: "gpa",
+        photo: "photo",
         createdAt: "created_at",
         updatedAt: "updated_at"
     };
@@ -2599,7 +2752,17 @@
         tabFormBtn: document.getElementById("tab-form-btn"),
         toggleFiltersBtn: document.getElementById("toggle-filters-btn"),
         toolbarFilters: document.getElementById("toolbar-filters"),
-        mainLayout: document.querySelector(".main-layout")
+        mainLayout: document.querySelector(".main-layout"),
+        photoPreviewBox: document.getElementById("photoPreviewBox"),
+        studentPhotoData: document.getElementById("studentPhotoData"),
+        photoUploadInput: document.getElementById("photoUploadInput"),
+        openCameraBtn: document.getElementById("open-camera-btn"),
+        choosePhotoBtn: document.getElementById("choose-photo-btn"),
+        cameraModal: document.getElementById("camera-modal"),
+        camVideo: document.getElementById("camVideo"),
+        camProcessingOverlay: document.getElementById("camProcessingOverlay"),
+        cancelCamBtn: document.getElementById("cancel-cam-btn"),
+        captureCamBtn: document.getElementById("capture-cam-btn")
     };
 
     const pobGroup = {
@@ -2662,7 +2825,7 @@
         "studentName", "gender", "dob", "className", "fromSchool",
         "pobVillage", "pobCommune", "pobDistrict", "pobProvince",
         "contact", "fatherName", "motherName",
-        "currentVillage", "currentCommune", "currentDistrict", "currentProvince", "gpa"
+        "currentVillage", "currentCommune", "currentDistrict", "currentProvince", "gpa", "photo"
     ];
     const STUDENT_TEMPLATE_EXAMPLE = [
         "", "(ឧ.) ហ៊ុន ណារ", "ប្រុស", "15/05/2010", "7A", "សាលាបឋមសិក្សាព្រៃខ្លា",
@@ -3394,6 +3557,199 @@
         return code;
     }
 
+    // ===================== PHOTO & WEBCAM =====================
+    let camStream = null;
+    let removeBackgroundLoader = null;
+    const PHOTO_BG_REMOVAL_URL = "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.3/+esm";
+
+    async function openCameraModal() {
+        if (!navigator.mediaDevices?.getUserMedia) {
+            showToast("Browser នេះមិនគាំទ្រកាមេរ៉ាផ្ទាល់ទេ។ សូមជ្រើសរូបពីឯកសារ", "warning");
+            els.photoUploadInput?.click();
+            return;
+        }
+        els.cameraModal?.classList.add("is-open");
+        try {
+            camStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 960 } },
+                audio: false
+            });
+            els.camVideo.srcObject = camStream;
+            await els.camVideo.play();
+        } catch (err) {
+            showToast("មិនអាចបើកកាមេរ៉ាបានទេ: " + err.message, "error");
+            closeCameraModal();
+        }
+    }
+
+    function closeCameraModal() {
+        els.cameraModal?.classList.remove("is-open");
+        if (camStream) {
+            camStream.getTracks().forEach(t => t.stop());
+            camStream = null;
+        }
+        if (els.camVideo) els.camVideo.srcObject = null;
+        setPhotoProcessing(false);
+    }
+
+    function setPhotoProcessing(isProcessing, text = "កំពុងរៀបចំរូបថត...") {
+        const overlay = els.camProcessingOverlay;
+        overlay?.classList.toggle("is-hidden", !isProcessing);
+        const label = overlay?.querySelector(".processing-text");
+        if (label) label.textContent = text;
+        [els.captureCamBtn, els.openCameraBtn, els.choosePhotoBtn].forEach(btn => {
+            if (btn) btn.disabled = isProcessing;
+        });
+    }
+
+    function safePhotoSrc(src = "") {
+        const v = String(src || "").trim();
+        return /^data:image\/(png|jpe?g|webp);base64,/i.test(v) || /^https:\/\/.+/i.test(v) ? v : "";
+    }
+
+    function setPhotoPreview(src = "") {
+        if (!els.photoPreviewBox) return;
+        const safeSrc = safePhotoSrc(src);
+        els.studentPhotoData.value = safeSrc;
+        els.photoPreviewBox.innerHTML = safeSrc
+            ? `<img src="${esc(safeSrc)}" alt="រូបថតសិស្ស">`
+            : '<ion-icon name="person-outline"></ion-icon>';
+    }
+
+    async function loadImageFromBlob(blob) {
+        const url = URL.createObjectURL(blob);
+        try {
+            const img = new Image();
+            img.decoding = "async";
+            img.src = url;
+            await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = reject;
+            });
+            return img;
+        } finally {
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+    }
+
+    async function removePhotoBackground(imageSource) {
+        try {
+            if (!removeBackgroundLoader) {
+                removeBackgroundLoader = import(PHOTO_BG_REMOVAL_URL).then(mod => mod.removeBackground || mod.default);
+            }
+            const removeBackground = await removeBackgroundLoader;
+            if (typeof removeBackground !== "function") throw new Error("Background removal library not available");
+            return await removeBackground(imageSource);
+        } catch (err) {
+            removeBackgroundLoader = null;
+            throw err;
+        }
+    }
+
+    function drawSkyBackground(ctx, width, height) {
+        const gradient = ctx.createLinearGradient(0, 0, 0, height);
+        gradient.addColorStop(0, "#b9e8ff");
+        gradient.addColorStop(0.45, "#5bb8ff");
+        gradient.addColorStop(1, "#1677d2");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.save();
+        ctx.globalAlpha = 0.42;
+        ctx.fillStyle = "#ffffff";
+        [
+            { x: 54, y: 64, s: 1 },
+            { x: 222, y: 96, s: .86 },
+            { x: 144, y: 34, s: .62 }
+        ].forEach(cloud => {
+            ctx.beginPath();
+            ctx.arc(cloud.x, cloud.y, 18 * cloud.s, Math.PI, 0);
+            ctx.arc(cloud.x + 22 * cloud.s, cloud.y - 8 * cloud.s, 26 * cloud.s, Math.PI, 0);
+            ctx.arc(cloud.x + 52 * cloud.s, cloud.y, 20 * cloud.s, Math.PI, 0);
+            ctx.rect(cloud.x - 18 * cloud.s, cloud.y, 92 * cloud.s, 18 * cloud.s);
+            ctx.fill();
+        });
+        ctx.restore();
+    }
+
+    function composeStudentPhoto(img, hasTransparentSubject) {
+        const canvas = document.createElement("canvas");
+        canvas.width = 300;
+        canvas.height = 400;
+        const ctx = canvas.getContext("2d");
+        drawSkyBackground(ctx, canvas.width, canvas.height);
+
+        if (hasTransparentSubject) {
+            const scale = Math.min((canvas.width - 26) / img.width, (canvas.height - 12) / img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            const x = (canvas.width - w) / 2;
+            const y = canvas.height - h;
+            ctx.drawImage(img, x, y, w, h);
+        } else {
+            const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            const x = (canvas.width - w) / 2;
+            const y = (canvas.height - h) / 2;
+            ctx.drawImage(img, x, y, w, h);
+        }
+
+        return canvas.toDataURL("image/jpeg", 0.76);
+    }
+
+    async function processPhoto(imageSource) {
+        setPhotoProcessing(true, "កំពុងកាត់ផ្ទៃខាងក្រោយ...");
+        if (els.photoPreviewBox) els.photoPreviewBox.innerHTML = '<div class="spinner spinner-dark"></div>';
+        let processedBlob = null;
+        let removedBackground = false;
+        try {
+            processedBlob = await removePhotoBackground(imageSource);
+            removedBackground = true;
+        } catch (err) {
+            console.warn("Background removal fallback:", err);
+            processedBlob = imageSource;
+            showToast("កាត់ផ្ទៃក្រោយមិនបាន។ បានដាក់រូបលើផ្ទៃមេឃជំនួស", "warning");
+        }
+        try {
+            setPhotoProcessing(true, "កំពុងដាក់ផ្ទៃមេឃពណ៌ខៀវ...");
+            const img = await loadImageFromBlob(processedBlob);
+            const base64 = composeStudentPhoto(img, removedBackground);
+            setPhotoPreview(base64);
+            if (removedBackground) showToast("បានរៀបចំរូបថតជាមួយផ្ទៃមេឃពណ៌ខៀវ");
+            closeCameraModal();
+        } catch (err) {
+            console.error("Photo processing error:", err);
+            showToast("រៀបចំរូបថតមិនបាន", "error");
+            setPhotoPreview("");
+        } finally {
+            setPhotoProcessing(false);
+        }
+    }
+
+    function capturePhoto() {
+        const video = els.camVideo;
+        if (!video.videoWidth) return;
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext("2d");
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob(blob => {
+            if (blob) processPhoto(blob);
+        }, "image/jpeg", 0.92);
+    }
+
+    function handlePhotoUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        processPhoto(file);
+        event.target.value = "";
+    }
+
     // ===================== FORM =====================
     function collectPayload() {
         if (els.sameAddress.checked) syncCurrentFromBirth();
@@ -3415,7 +3771,8 @@
             fromSchool: els.fromSchool.value,
             className: getValue("className"),
             gpa: getValue("gpa"),
-            contact: getValue("contact")
+            contact: getValue("contact"),
+            photo: getValue("studentPhotoData")
         };
     }
 
@@ -3468,6 +3825,7 @@
     function resetForm() {
         closeMobileEditPanel();
         els.registrationForm.reset();
+        setPhotoPreview("");
         setEditMode("");
         resetAddressGroup(pobGroup);
         resetAddressGroup(currentGroup);
@@ -3484,6 +3842,10 @@
         const s = allStudents.find(i => i.id === id);
         if (!s) { showToast("រកមិនឃើញទិន្នន័យសិស្ស","error"); return; }
         fieldIds.forEach(fid => setValue(fid, s[fid]||""));
+
+        // Handle photo
+        setPhotoPreview(s.photo || "");
+
         ensureSchoolOption(s.fromSchool);
         els.fromSchool.value = s.fromSchool || "";
         document.querySelectorAll('input[name="gender"]').forEach(i => { i.checked = i.value === (s.gender||"ប្រុស"); });
@@ -3815,16 +4177,20 @@
             const rows = students.map(s => {
                 rowNum++;
                 const status = getStudentDataStatus(s);
+                const photoSrc = safePhotoSrc(s.photo);
                 return `
                     <tr class="${esc(status.rowClass)}" title="${esc(status.title)}">
                         <td class="muted" style="font-size:.8rem; text-align:center;">${rowNum}</td>
                         <td style="font-family: monospace; font-size:.82rem;">${esc(studentVisibleId(s)||"–")}</td>
                         <td>
-                            <div class="table-student-name">
-                                <button class="student-name-button edit-btn" type="button" data-id="${esc(s.id)}" title="កែព័ត៌មាន ${esc(s.studentName)}">
-                                    <span class="student-name">${esc(s.studentName)}</span>
-                                </button>
-                                ${dataStatusBadge(status)}
+                            <div class="table-student-name" style="display: flex; align-items: center; gap: 8px;">
+                                ${photoSrc ? `<img src="${esc(photoSrc)}" class="student-photo-thumbnail" alt="photo">` : ''}
+                                <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
+                                    <button class="student-name-button edit-btn" type="button" data-id="${esc(s.id)}" title="កែព័ត៌មាន ${esc(s.studentName)}">
+                                        <span class="student-name">${esc(s.studentName)}</span>
+                                    </button>
+                                    ${dataStatusBadge(status)}
+                                </div>
                             </div>
                         </td>
                         <td style="text-align:center;">${genderBadge(s.gender||"")}</td>
@@ -3869,6 +4235,7 @@
             const cards = students.map(s => {
                 cardNum++;
                 const status = getStudentDataStatus(s);
+                const photoSrc = safePhotoSrc(s.photo);
                 const miniInfo = [
                     s.className ? `ថ្នាក់ ${s.className}` : "មិនទាន់មានថ្នាក់",
                     s.contact ? `ទូរស័ព្ទ ${s.contact}` : "ខ្វះលេខទូរស័ព្ទ"
@@ -3877,7 +4244,8 @@
                     <article class="student-card ${esc(status.rowClass)}" title="${esc(status.title)}">
                         <div class="mobile-student-row">
                             <button class="student-name-button mobile-student-main edit-btn" type="button" data-id="${esc(s.id)}" aria-label="កែព័ត៌មាន ${esc(s.studentName)}">
-                                <span class="mobile-student-title">
+                                <span class="mobile-student-title" style="display: flex; align-items: center;">
+                                    ${photoSrc ? `<img src="${esc(photoSrc)}" class="student-photo-thumbnail" style="margin-right: 8px; width: 26px; height: 26px;" alt="photo">` : ''}
                                     <span class="student-index">${cardNum}.</span>
                                     <span class="student-name">${esc(s.studentName)}</span>
                                 </span>
@@ -4044,6 +4412,7 @@
     function printStudent(id) {
         const s = allStudents.find(i => i.id === id);
         if (!s) { showToast("រកមិនឃើញទិន្នន័យសិស្ស","warning"); return; }
+        const photoSrc = safePhotoSrc(s.photo);
         const rows = [
             ["លេខសម្គាល់",studentVisibleId(s)],["ឈ្មោះ",s.studentName],["ភេទ",s.gender],
             ["ថ្ងៃខែឆ្នាំកំណើត",formatDate(s.dob)],["ថ្នាក់",s.className],["សាលា",s.fromSchool],
@@ -4054,6 +4423,7 @@
         printWindow("ពាក្យចុះឈ្មោះ",`
             <h1>ពាក្យចុះឈ្មោះសិស្ស</h1>
             <p class="meta">បោះពុម្ព ${esc(new Date().toLocaleString("km-KH"))}</p>
+            ${photoSrc ? `<div style="display:flex;justify-content:center;margin:0 0 14px;"><img src="${esc(photoSrc)}" alt="រូបថតសិស្ស" style="width:90px;height:120px;object-fit:cover;border:1px solid #9ca3af;"></div>` : ""}
             <table class="form-table"><tbody>${rows}</tbody></table>
             <div class="sig-grid">
                 <div><div>ហត្ថលេខាមាតាបិតា/អាណាព្យាបាល</div><div class="sig-line">ឈ្មោះ និងហត្ថលេខា</div></div>
@@ -4406,6 +4776,12 @@
         // Form
         els.registrationForm.addEventListener("submit",handleFormSubmit);
         els.clearBtn.addEventListener("click",resetForm);
+        els.openCameraBtn?.addEventListener("click",openCameraModal);
+        els.choosePhotoBtn?.addEventListener("click",()=>els.photoUploadInput?.click());
+        els.photoUploadInput?.addEventListener("change",handlePhotoUpload);
+        els.cancelCamBtn?.addEventListener("click",closeCameraModal);
+        els.captureCamBtn?.addEventListener("click",capturePhoto);
+        els.cameraModal?.addEventListener("click",e=>{if(e.target===els.cameraModal)closeCameraModal();});
 
         // Filters
         els.searchInput.addEventListener("input",applyFilters);

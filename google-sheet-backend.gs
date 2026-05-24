@@ -23,6 +23,7 @@ const HEADERS = [
   "currentDistrict",
   "currentProvince",
   "gpa",
+  "photo",
   "createdAt",
   "updatedAt"
 ];
@@ -47,6 +48,7 @@ const HEADER_LABELS = {
   currentDistrict: "ស្រុក/ខណ្ឌបច្ចុប្បន្ន",
   currentProvince: "ខេត្ត/ក្រុងបច្ចុប្បន្ន",
   gpa: "មធ្យមភាគ",
+  photo: "រូបថត",
   createdAt: "បង្កើតនៅ",
   updatedAt: "កែចុងក្រោយ"
 };
@@ -69,14 +71,15 @@ const VIEW_FIELDS = [
   "currentCommune",
   "currentDistrict",
   "currentProvince",
-  "gpa"
+  "gpa",
+  "photo"
 ];
 
 const HEADER_ROW = HEADERS.map(function(key) { return HEADER_LABELS[key] || key; });
 const VIEW_HEADER_ROW = VIEW_FIELDS.map(function(key) { return HEADER_LABELS[key] || key; });
 
-const STUDENT_COLUMN_WIDTHS = [90, 95, 170, 60, 105, 80, 165, 115, 135, 135, 135, 120, 130, 130, 125, 150, 150, 150, 85, 145, 145];
-const VIEW_COLUMN_WIDTHS = [95, 170, 60, 105, 80, 165, 120, 130, 130, 115, 135, 135, 135, 125, 150, 150, 150, 85];
+const STUDENT_COLUMN_WIDTHS = [90, 95, 170, 60, 105, 80, 165, 115, 135, 135, 135, 120, 130, 130, 125, 150, 150, 150, 85, 100, 145, 145];
+const VIEW_COLUMN_WIDTHS = [95, 170, 60, 105, 80, 165, 120, 130, 130, 115, 135, 135, 135, 125, 150, 150, 150, 85, 100];
 const CLASS_TAB_COLORS = ["#0f766e", "#2563eb", "#7c3aed", "#15803d", "#b45309", "#be123c", "#0891b2", "#4f46e5"];
 
 function doGet(e) {
