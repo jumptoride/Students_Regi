@@ -1471,6 +1471,51 @@
             .main-layout.show-form .list-panel { display: none; }
             .main-layout.show-form + .history-panel { display: none; }
 
+            body.mobile-editing { overflow: hidden; }
+
+            .main-layout.show-list.mobile-edit-open .form-panel {
+                position: fixed;
+                inset: 0;
+                z-index: 80;
+                display: flex;
+                flex-direction: column;
+                margin: 0;
+                border: 0;
+                border-radius: 0;
+                background: var(--surface);
+                box-shadow: none;
+            }
+
+            .main-layout.mobile-edit-open .form-panel .panel-header {
+                position: sticky;
+                top: 0;
+                z-index: 2;
+                min-height: 58px;
+                padding: 12px 14px;
+                background: var(--surface);
+                border-bottom: 1px solid var(--border);
+                box-shadow: var(--shadow-sm);
+            }
+
+            .main-layout.mobile-edit-open #registration-form {
+                display: flex;
+                flex: 1;
+                min-height: 0;
+                flex-direction: column;
+            }
+
+            .main-layout.mobile-edit-open .form-body {
+                flex: 1;
+                max-height: none;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: calc(92px + env(safe-area-inset-bottom));
+            }
+
+            .main-layout.mobile-edit-open .form-save-bar {
+                z-index: 85;
+            }
+
             .panel {
                 margin: 0 -12px;
                 border-left: 0;
@@ -3393,17 +3438,35 @@
         }
     }
 
-    function setActiveTab(tab) {
+    function isMobileView() {
+        return window.matchMedia("(max-width: 860px)").matches;
+    }
+
+    function openMobileEditPanel() {
         if (!els.mainLayout) return;
+        els.mainLayout.classList.add("mobile-edit-open");
+        document.body.classList.add("mobile-editing");
+        els.formPanel.querySelector(".form-body")?.scrollTo({ top: 0 });
+    }
+
+    function closeMobileEditPanel() {
+        els.mainLayout?.classList.remove("mobile-edit-open");
+        document.body.classList.remove("mobile-editing");
+    }
+
+    function setActiveTab(tab, options = {}) {
+        if (!els.mainLayout) return;
+        closeMobileEditPanel();
         const isForm = tab === "form";
         els.mainLayout.classList.toggle("show-form", isForm);
         els.mainLayout.classList.toggle("show-list", !isForm);
         els.tabFormBtn?.classList.toggle("active", isForm);
         els.tabListBtn?.classList.toggle("active", !isForm);
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        if (options.scroll !== false) window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function resetForm() {
+        closeMobileEditPanel();
         els.registrationForm.reset();
         setEditMode("");
         resetAddressGroup(pobGroup);
@@ -3429,8 +3492,11 @@
         els.sameAddress.checked = addressesMatch(s);
         lockCurrentAddress(els.sameAddress.checked);
         setEditMode(id);
-        if (window.matchMedia("(max-width: 860px)").matches) setActiveTab("form");
-        els.formPanel.scrollIntoView({ behavior:"smooth", block:"start" });
+        if (isMobileView()) {
+            openMobileEditPanel();
+        } else {
+            els.formPanel.scrollIntoView({ behavior:"smooth", block:"start" });
+        }
     }
 
     function setSaving(isSaving) {
@@ -3517,7 +3583,7 @@
             }
             resetForm();
             await refreshStudents({ reset: !editingId, source:"memory" });
-            if (window.matchMedia("(max-width: 860px)").matches) setActiveTab("list");
+            if (isMobileView()) setActiveTab("list", { scroll: !editingId });
         } catch(e) {
             console.error("Save error:", e);
             showToast("រក្សាទុកមិនបាន","error");
@@ -4399,6 +4465,9 @@
         // Mobile UI
         els.tabListBtn?.addEventListener("click", () => setActiveTab("list"));
         els.tabFormBtn?.addEventListener("click", () => setActiveTab("form"));
+        window.addEventListener("resize", () => {
+            if (!isMobileView()) closeMobileEditPanel();
+        });
         els.toggleFiltersBtn?.addEventListener("click", () => {
             els.toolbarFilters?.classList.toggle("is-open");
             els.toggleFiltersBtn.classList.toggle("active");
