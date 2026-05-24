@@ -2051,6 +2051,10 @@
         </div>
         <div class="modal-footer">
             <button id="clear-sheet-url-btn" class="btn btn-ghost" type="button">សម្អាត Storage</button>
+            <button id="test-storage-btn" class="btn btn-ghost" type="button">
+                <ion-icon name="pulse-outline" aria-hidden="true"></ion-icon>
+                <span>តេស្តភ្ជាប់</span>
+            </button>
             <button id="cancel-sheet-url-btn" class="btn btn-ghost" type="button">បោះបង់</button>
             <button id="save-sheet-url-btn" class="btn btn-primary" type="button">
                 <ion-icon name="save-outline" aria-hidden="true"></ion-icon>
@@ -2391,6 +2395,7 @@
         supabaseKeyInput: document.getElementById("supabase-key-input"),
         sheetUrlInput: document.getElementById("sheet-url-input"),
         clearSheetUrlBtn: document.getElementById("clear-sheet-url-btn"),
+        testStorageBtn: document.getElementById("test-storage-btn"),
         cancelSheetUrlBtn: document.getElementById("cancel-sheet-url-btn"),
         saveSheetUrlBtn: document.getElementById("save-sheet-url-btn"),
         downloadTemplateBtn: document.getElementById("download-template-btn"),
@@ -2736,6 +2741,77 @@
         setCloudControlsLoading(false);
         showToast("បានរក្សាទុក Google Sheet URL");
         loadStudentsFromCloudStorage({ silent:false, keepLocalWhenCloudEmpty:true });
+    }
+
+    function setStorageTestLoading(loading) {
+        els.testStorageBtn.disabled = loading;
+        els.testStorageBtn.innerHTML = loading
+            ? '<span class="spinner"></span><span>កំពុងតេស្ត...</span>'
+            : '<ion-icon name="pulse-outline" aria-hidden="true"></ion-icon><span>តេស្តភ្ជាប់</span>';
+    }
+
+    async function testSupabaseDraftConnection(url, key) {
+        const response = await fetch(`${url}/rest/v1/students?select=id&limit=1`, {
+            method: "GET",
+            mode: "cors",
+            cache: "no-cache",
+            headers: {
+                "apikey": key,
+                "Authorization": `Bearer ${key}`
+            }
+        });
+        if (response.ok) return { ok:true, message:"Supabase ភ្ជាប់បានត្រឹមត្រូវ" };
+        const text = await response.text();
+        if (response.status === 404) return { ok:false, message:"Supabase ភ្ជាប់បាន ប៉ុន្តែ table students មិនទាន់មាន។ សូម run supabase-schema.sql" };
+        if (response.status === 401 || response.status === 403) return { ok:false, message:"Supabase key មិនត្រឹមត្រូវ ឬ RLS policy មិនអនុញ្ញាត" };
+        return { ok:false, message:text || `Supabase error ${response.status}` };
+    }
+
+    function testGoogleSheetDraftConnection(url) {
+        return new Promise((resolve) => {
+            const callback = `studentStorageTest_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+            const script = document.createElement("script");
+            const timer = setTimeout(() => cleanup({ ok:false, message:"Google Sheet timeout" }), 15000);
+            function cleanup(result) {
+                clearTimeout(timer);
+                delete window[callback];
+                script.remove();
+                resolve(result);
+            }
+            window[callback] = (payload) => {
+                cleanup(payload && payload.ok !== false
+                    ? { ok:true, message:"Google Sheet ភ្ជាប់បានត្រឹមត្រូវ" }
+                    : { ok:false, message:(payload && payload.error) || "Google Sheet មិនត្រឹមត្រូវ" });
+            };
+            try {
+                const u = new URL(url);
+                u.searchParams.set("action", "list");
+                u.searchParams.set("callback", callback);
+                script.src = u.toString();
+                script.onerror = () => cleanup({ ok:false, message:"មិនអាចភ្ជាប់ Google Sheet URL" });
+                document.head.append(script);
+            } catch(e) {
+                cleanup({ ok:false, message:"Google Sheet URL មិនត្រឹមត្រូវ" });
+            }
+        });
+    }
+
+    async function testCloudStorageConnection() {
+        const provider = els.storageProviderSelect.value;
+        setStorageTestLoading(true);
+        try {
+            const result = provider === SUPABASE_PROVIDER
+                ? await testSupabaseDraftConnection(normalizeSupabaseUrl(els.supabaseUrlInput.value), els.supabaseKeyInput.value.trim())
+                : await testGoogleSheetDraftConnection(els.sheetUrlInput.value.trim());
+            showToast(result.message, result.ok ? "success" : "warning");
+            setStatus(result.ok ? (provider === SUPABASE_PROVIDER ? "Supabase" : "Google Sheet") : "Storage មិនទាន់រួច", result.ok ? "connected" : "error");
+        } catch(e) {
+            console.error("Storage test error:", e);
+            showToast("តេស្តភ្ជាប់មិនបាន", "error");
+            setStatus("Storage មិនបានភ្ជាប់", "error");
+        } finally {
+            setStorageTestLoading(false);
+        }
     }
 
     async function supabaseFetch(path, options={}) {
@@ -4107,6 +4183,7 @@
         els.sheetSettingsBtn.addEventListener("click",openSheetModal);
         els.cancelSheetUrlBtn.addEventListener("click",closeSheetModal);
         els.saveSheetUrlBtn.addEventListener("click",saveSheetUrl);
+        els.testStorageBtn.addEventListener("click",testCloudStorageConnection);
         els.storageProviderSelect.addEventListener("change",updateStorageFieldsVisibility);
         els.clearSheetUrlBtn.addEventListener("click",()=>{
             clearCloudSettings(els.storageProviderSelect.value);
