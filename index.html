@@ -3560,7 +3560,10 @@
     // ===================== PHOTO & WEBCAM =====================
     let camStream = null;
     let removeBackgroundLoader = null;
+    let selfieSegmentationLoader = null;
     const PHOTO_BG_REMOVAL_URL = "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.3/+esm";
+    const SELFIE_SEGMENTATION_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js";
+    const SELFIE_SEGMENTATION_ASSET_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/";
 
     async function openCameraModal() {
         if (!navigator.mediaDevices?.getUserMedia) {
@@ -3632,6 +3635,103 @@
         }
     }
 
+    function canvasToBlob(canvas, type = "image/png", quality) {
+        return new Promise((resolve, reject) => {
+            canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("Cannot export canvas")), type, quality);
+        });
+    }
+
+    function loadScriptOnce(src, test) {
+        if (test?.()) return Promise.resolve();
+        return new Promise((resolve, reject) => {
+            const existing = [...document.scripts].find(script => script.src === src);
+            if (existing) {
+                if (existing.dataset.loaded === "true") {
+                    if (test?.()) resolve();
+                    else reject(new Error(`Loaded script did not expose API: ${src}`));
+                    return;
+                }
+                existing.addEventListener("load", () => resolve(), { once:true });
+                existing.addEventListener("error", () => reject(new Error(`Cannot load ${src}`)), { once:true });
+                return;
+            }
+            const script = document.createElement("script");
+            script.src = src;
+            script.async = true;
+            script.crossOrigin = "anonymous";
+            script.onload = () => {
+                script.dataset.loaded = "true";
+                resolve();
+            };
+            script.onerror = () => reject(new Error(`Cannot load ${src}`));
+            document.head.append(script);
+        });
+    }
+
+    async function getSelfieSegmentationCtor() {
+        if (!selfieSegmentationLoader) {
+            selfieSegmentationLoader = loadScriptOnce(SELFIE_SEGMENTATION_URL, () => typeof window.SelfieSegmentation === "function")
+                .then(() => {
+                    if (typeof window.SelfieSegmentation !== "function") throw new Error("SelfieSegmentation is not available");
+                    return window.SelfieSegmentation;
+                })
+                .catch(err => {
+                    selfieSegmentationLoader = null;
+                    throw err;
+                });
+        }
+        return selfieSegmentationLoader;
+    }
+
+    async function segmentPersonWithMediaPipe(img) {
+        const SelfieSegmentation = await getSelfieSegmentationCtor();
+        return new Promise((resolve, reject) => {
+            let settled = false;
+            const model = new SelfieSegmentation({
+                locateFile: file => `${SELFIE_SEGMENTATION_ASSET_BASE}${file}`
+            });
+            const timer = setTimeout(() => {
+                if (settled) return;
+                settled = true;
+                model.close?.();
+                reject(new Error("Selfie segmentation timeout"));
+            }, 16000);
+
+            model.setOptions({
+                modelSelection: 1,
+                selfieMode: false
+            });
+            model.onResults(results => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                try {
+                    const width = img.naturalWidth || img.width;
+                    const height = img.naturalHeight || img.height;
+                    const canvas = document.createElement("canvas");
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext("2d");
+                    ctx.drawImage(results.segmentationMask, 0, 0, width, height);
+                    ctx.globalCompositeOperation = "source-in";
+                    ctx.drawImage(img, 0, 0, width, height);
+                    canvasToBlob(canvas, "image/png").then(resolve, reject);
+                } catch (err) {
+                    reject(err);
+                } finally {
+                    model.close?.();
+                }
+            });
+            model.send({ image: img }).catch(err => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                model.close?.();
+                reject(err);
+            });
+        });
+    }
+
     async function removePhotoBackground(imageSource) {
         try {
             if (!removeBackgroundLoader) {
@@ -3672,6 +3772,37 @@
         ctx.restore();
     }
 
+    function getAlphaBounds(img) {
+        const width = img.naturalWidth || img.width;
+        const height = img.naturalHeight || img.height;
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d", { willReadFrequently:true });
+        ctx.drawImage(img, 0, 0, width, height);
+        const data = ctx.getImageData(0, 0, width, height).data;
+        let minX = width, minY = height, maxX = -1, maxY = -1;
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const alpha = data[((y * width + x) * 4) + 3];
+                if (alpha > 18) {
+                    if (x < minX) minX = x;
+                    if (x > maxX) maxX = x;
+                    if (y < minY) minY = y;
+                    if (y > maxY) maxY = y;
+                }
+            }
+        }
+        if (maxX < minX || maxY < minY) return null;
+        const padX = Math.round((maxX - minX + 1) * 0.08);
+        const padY = Math.round((maxY - minY + 1) * 0.04);
+        minX = Math.max(0, minX - padX);
+        minY = Math.max(0, minY - padY);
+        maxX = Math.min(width - 1, maxX + padX);
+        maxY = Math.min(height - 1, maxY + padY);
+        return { x:minX, y:minY, w:maxX - minX + 1, h:maxY - minY + 1 };
+    }
+
     function composeStudentPhoto(img, hasTransparentSubject) {
         const canvas = document.createElement("canvas");
         canvas.width = 300;
@@ -3680,16 +3811,20 @@
         drawSkyBackground(ctx, canvas.width, canvas.height);
 
         if (hasTransparentSubject) {
-            const scale = Math.min((canvas.width - 26) / img.width, (canvas.height - 12) / img.height);
-            const w = img.width * scale;
-            const h = img.height * scale;
+            const bounds = getAlphaBounds(img);
+            const source = bounds || { x:0, y:0, w:img.naturalWidth || img.width, h:img.naturalHeight || img.height };
+            const scale = Math.min((canvas.width - 26) / source.w, (canvas.height - 10) / source.h);
+            const w = source.w * scale;
+            const h = source.h * scale;
             const x = (canvas.width - w) / 2;
             const y = canvas.height - h;
-            ctx.drawImage(img, x, y, w, h);
+            ctx.drawImage(img, source.x, source.y, source.w, source.h, x, y, w, h);
         } else {
-            const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
-            const w = img.width * scale;
-            const h = img.height * scale;
+            const sourceWidth = img.naturalWidth || img.width;
+            const sourceHeight = img.naturalHeight || img.height;
+            const scale = Math.max(canvas.width / sourceWidth, canvas.height / sourceHeight);
+            const w = sourceWidth * scale;
+            const h = sourceHeight * scale;
             const x = (canvas.width - w) / 2;
             const y = (canvas.height - h) / 2;
             ctx.drawImage(img, x, y, w, h);
@@ -3701,27 +3836,32 @@
     async function processPhoto(imageSource) {
         setPhotoProcessing(true, "កំពុងកាត់ផ្ទៃខាងក្រោយ...");
         if (els.photoPreviewBox) els.photoPreviewBox.innerHTML = '<div class="spinner spinner-dark"></div>';
-        let processedBlob = null;
-        let removedBackground = false;
+        let subjectImg = null;
         try {
-            processedBlob = await removePhotoBackground(imageSource);
-            removedBackground = true;
-        } catch (err) {
-            console.warn("Background removal fallback:", err);
-            processedBlob = imageSource;
-            showToast("កាត់ផ្ទៃក្រោយមិនបាន។ បានដាក់រូបលើផ្ទៃមេឃជំនួស", "warning");
-        }
-        try {
+            const originalImg = await loadImageFromBlob(imageSource);
+            setPhotoProcessing(true, "កំពុងកាត់មនុស្សចេញពីផ្ទៃក្រោយ...");
+            const segmentedBlob = await segmentPersonWithMediaPipe(originalImg);
+            subjectImg = await loadImageFromBlob(segmentedBlob);
             setPhotoProcessing(true, "កំពុងដាក់ផ្ទៃមេឃពណ៌ខៀវ...");
-            const img = await loadImageFromBlob(processedBlob);
-            const base64 = composeStudentPhoto(img, removedBackground);
+            const base64 = composeStudentPhoto(subjectImg, true);
             setPhotoPreview(base64);
-            if (removedBackground) showToast("បានរៀបចំរូបថតជាមួយផ្ទៃមេឃពណ៌ខៀវ");
+            showToast("បានកាត់ផ្ទៃក្រោយ និងដាក់ផ្ទៃមេឃពណ៌ខៀវ");
             closeCameraModal();
         } catch (err) {
-            console.error("Photo processing error:", err);
-            showToast("រៀបចំរូបថតមិនបាន", "error");
-            setPhotoPreview("");
+            console.warn("MediaPipe segmentation failed:", err);
+            try {
+                setPhotoProcessing(true, "កំពុងប្រើវិធីកាត់ផ្ទៃក្រោយជំនួស...");
+                const processedBlob = await removePhotoBackground(imageSource);
+                subjectImg = await loadImageFromBlob(processedBlob);
+                const base64 = composeStudentPhoto(subjectImg, true);
+                setPhotoPreview(base64);
+                showToast("បានកាត់ផ្ទៃក្រោយ និងដាក់ផ្ទៃមេឃពណ៌ខៀវ");
+                closeCameraModal();
+            } catch (fallbackErr) {
+                console.error("Photo processing error:", fallbackErr);
+                showToast("កាត់ផ្ទៃក្រោយមិនបាន។ សូមព្យាយាមថតមុខឱ្យច្បាស់ និងពន្លឺគ្រប់គ្រាន់", "error");
+                setPhotoPreview("");
+            }
         } finally {
             setPhotoProcessing(false);
         }
