@@ -1736,26 +1736,34 @@
             width: min(520px, 100%);
         }
         .cam-preview-box {
-            width: 100%;
-            aspect-ratio: 4/3;
+            width: min(100%, 390px);
+            aspect-ratio: 315/400;
             background: #000;
             border-radius: var(--radius-sm);
             overflow: hidden;
             position: relative;
-            margin-bottom: 14px;
+            margin: 0 auto 14px;
         }
         .cam-preview-box video {
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+        .cam-preview-box.is-mirrored video {
             transform: scaleX(-1);
         }
         .cam-overlay-guide {
             position: absolute;
-            inset: 10%;
+            inset: 7% 15% 10%;
             border: 2px dashed rgba(255,255,255,0.5);
-            border-radius: var(--radius-sm);
+            border-radius: 999px 999px var(--radius-sm) var(--radius-sm);
             pointer-events: none;
+        }
+        .cam-modal .modal-footer {
+            justify-content: stretch;
+        }
+        .cam-modal .modal-footer .btn {
+            flex: 1 1 0;
         }
         .bg-processing-overlay {
             position: absolute;
@@ -1778,6 +1786,27 @@
             border: 1px solid var(--border);
         }
         @media (max-width: 520px) {
+            .cam-modal {
+                align-items: flex-start;
+                padding-top: max(12px, env(safe-area-inset-top));
+            }
+            .cam-modal .modal-dialog {
+                width: min(100%, 360px);
+            }
+            .cam-modal .modal-body {
+                padding: 14px;
+            }
+            .cam-preview-box {
+                width: min(100%, 300px);
+            }
+            .cam-modal .modal-footer {
+                padding: 12px 14px;
+                gap: 8px;
+            }
+            .cam-modal .modal-footer .btn {
+                padding: 0 10px;
+                font-size: .82rem;
+            }
             .photo-upload-wrap {
                 align-items: stretch;
             }
@@ -1850,6 +1879,10 @@
                 <button id="print-list-btn" class="btn btn-ghost" type="button" title="Print Student List">
                     <ion-icon name="print-outline" aria-hidden="true"></ion-icon>
                     <span>Print</span>
+                </button>
+                <button id="print-photo-list-btn" class="btn btn-ghost" type="button" title="Print Student List With Photos">
+                    <ion-icon name="images-outline" aria-hidden="true"></ion-icon>
+                    <span>Print រូបថត</span>
                 </button>
                 <button id="download-csv-btn" class="btn btn-primary" type="button" title="Download CSV">
                     <ion-icon name="download-outline" aria-hidden="true"></ion-icon>
@@ -2288,6 +2321,10 @@
         </div>
         <div class="modal-footer">
             <button id="cancel-cam-btn" class="btn btn-ghost" type="button">បោះបង់</button>
+            <button id="switch-cam-btn" class="btn btn-ghost" type="button">
+                <ion-icon name="camera-reverse-outline"></ion-icon>
+                <span>កាមេរ៉ាក្រោយ</span>
+            </button>
             <button id="capture-cam-btn" class="btn btn-primary" type="button">
                 <ion-icon name="camera"></ion-icon> ថតរូប
             </button>
@@ -2428,6 +2465,10 @@
         <button id="m-print-list-btn" class="sheet-menu-item" type="button">
             <ion-icon name="print-outline" aria-hidden="true"></ion-icon>
             <span>Print</span>
+        </button>
+        <button id="m-print-photo-list-btn" class="sheet-menu-item" type="button">
+            <ion-icon name="images-outline" aria-hidden="true"></ion-icon>
+            <span>Print រូបថត</span>
         </button>
         <button id="m-download-csv-btn" class="sheet-menu-item" type="button">
             <ion-icon name="download-outline" aria-hidden="true"></ion-icon>
@@ -2733,6 +2774,7 @@
         importFileBtn: document.getElementById("import-file-btn"),
         importFileInput: document.getElementById("import-file-input"),
         printListBtn: document.getElementById("print-list-btn"),
+        printPhotoListBtn: document.getElementById("print-photo-list-btn"),
         downloadCsvBtn: document.getElementById("download-csv-btn"),
         deleteAllBtn: document.getElementById("delete-all-btn"),
         deleteModal: document.getElementById("delete-modal"),
@@ -2762,6 +2804,7 @@
         camVideo: document.getElementById("camVideo"),
         camProcessingOverlay: document.getElementById("camProcessingOverlay"),
         cancelCamBtn: document.getElementById("cancel-cam-btn"),
+        switchCamBtn: document.getElementById("switch-cam-btn"),
         captureCamBtn: document.getElementById("capture-cam-btn")
     };
 
@@ -3559,6 +3602,7 @@
 
     // ===================== PHOTO & WEBCAM =====================
     let camStream = null;
+    let camFacingMode = "user";
     let removeBackgroundLoader = null;
     let selfieSegmentationLoader = null;
     const PHOTO_BG_REMOVAL_URL = "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.3/+esm";
@@ -3568,6 +3612,45 @@
     const STUDENT_PHOTO_HEIGHT = 400;
     const STUDENT_PHOTO_BLUE = "#3b86ee";
 
+    function cameraConstraints() {
+        const portrait = window.innerHeight >= window.innerWidth || window.matchMedia("(max-width: 768px)").matches;
+        return {
+            video: {
+                facingMode: { ideal: camFacingMode },
+                width: { ideal: portrait ? 1080 : 1280 },
+                height: { ideal: portrait ? 1440 : 960 },
+                aspectRatio: { ideal: STUDENT_PHOTO_WIDTH / STUDENT_PHOTO_HEIGHT }
+            },
+            audio: false
+        };
+    }
+
+    function stopCameraStream() {
+        if (camStream) {
+            camStream.getTracks().forEach(t => t.stop());
+            camStream = null;
+        }
+        if (els.camVideo) els.camVideo.srcObject = null;
+    }
+
+    function updateCameraUi() {
+        const isFront = camFacingMode === "user";
+        els.camVideo?.closest(".cam-preview-box")?.classList.toggle("is-mirrored", isFront);
+        if (els.switchCamBtn) {
+            const label = els.switchCamBtn.querySelector("span");
+            if (label) label.textContent = isFront ? "កាមេរ៉ាក្រោយ" : "កាមេរ៉ាមុខ";
+            els.switchCamBtn.title = isFront ? "ប្តូរទៅកាមេរ៉ាក្រោយ" : "ប្តូរទៅកាមេរ៉ាមុខ";
+        }
+    }
+
+    async function startCameraStream() {
+        stopCameraStream();
+        updateCameraUi();
+        camStream = await navigator.mediaDevices.getUserMedia(cameraConstraints());
+        els.camVideo.srcObject = camStream;
+        await els.camVideo.play();
+    }
+
     async function openCameraModal() {
         if (!navigator.mediaDevices?.getUserMedia) {
             showToast("Browser នេះមិនគាំទ្រកាមេរ៉ាផ្ទាល់ទេ។ សូមជ្រើសរូបពីឯកសារ", "warning");
@@ -3576,25 +3659,33 @@
         }
         els.cameraModal?.classList.add("is-open");
         try {
-            camStream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 960 } },
-                audio: false
-            });
-            els.camVideo.srcObject = camStream;
-            await els.camVideo.play();
+            await startCameraStream();
         } catch (err) {
             showToast("មិនអាចបើកកាមេរ៉ាបានទេ: " + err.message, "error");
             closeCameraModal();
         }
     }
 
+    async function switchCamera() {
+        if (!navigator.mediaDevices?.getUserMedia) return;
+        const previous = camFacingMode;
+        camFacingMode = previous === "user" ? "environment" : "user";
+        setPhotoProcessing(true, "កំពុងប្តូរកាមេរ៉ា...");
+        try {
+            await startCameraStream();
+        } catch (err) {
+            camFacingMode = previous;
+            updateCameraUi();
+            try { await startCameraStream(); } catch {}
+            showToast("មិនអាចប្តូរកាមេរ៉ាបានទេ", "warning");
+        } finally {
+            setPhotoProcessing(false);
+        }
+    }
+
     function closeCameraModal() {
         els.cameraModal?.classList.remove("is-open");
-        if (camStream) {
-            camStream.getTracks().forEach(t => t.stop());
-            camStream = null;
-        }
-        if (els.camVideo) els.camVideo.srcObject = null;
+        stopCameraStream();
         setPhotoProcessing(false);
     }
 
@@ -3603,7 +3694,7 @@
         overlay?.classList.toggle("is-hidden", !isProcessing);
         const label = overlay?.querySelector(".processing-text");
         if (label) label.textContent = text;
-        [els.captureCamBtn, els.openCameraBtn, els.choosePhotoBtn].forEach(btn => {
+        [els.captureCamBtn, els.switchCamBtn, els.openCameraBtn, els.choosePhotoBtn].forEach(btn => {
             if (btn) btn.disabled = isProcessing;
         });
     }
@@ -3795,11 +3886,15 @@
         if (hasTransparentSubject) {
             const bounds = getAlphaBounds(img);
             const source = bounds || { x:0, y:0, w:img.naturalWidth || img.width, h:img.naturalHeight || img.height };
-            const scale = Math.max((canvas.width * 1.04) / source.w, (canvas.height * 0.925) / source.h);
+            const maxScaleByHeight = (canvas.height * 0.92) / source.h;
+            const targetScaleByWidth = (canvas.width * 0.98) / source.w;
+            const targetScaleByHeight = (canvas.height * 0.82) / source.h;
+            const scale = Math.min(Math.max(targetScaleByWidth, targetScaleByHeight), maxScaleByHeight);
             const w = source.w * scale;
             const h = source.h * scale;
             const x = (canvas.width - w) / 2;
-            const y = canvas.height - h;
+            const bottomPad = Math.round(canvas.height * 0.015);
+            const y = Math.max(Math.round(canvas.height * 0.065), canvas.height - h - bottomPad);
             ctx.drawImage(img, source.x, source.y, source.w, source.h, x, y, w, h);
         } else {
             const sourceWidth = img.naturalWidth || img.width;
@@ -3856,8 +3951,10 @@
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         const ctx = canvas.getContext("2d");
-        ctx.translate(canvas.width, 0);
-        ctx.scale(-1, 1);
+        if (camFacingMode === "user") {
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+        }
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
         canvas.toBlob(blob => {
@@ -4553,15 +4650,21 @@
             </div>`);
     }
 
-    function printStudentList() {
+    function printStudentList(withPhotos = false) {
         const rows = hasActiveFilters() ? visibleStudents : allStudents;
         if (!rows.length) { showToast("មិនមានទិន្នន័យសម្រាប់បោះពុម្ព","warning"); return; }
+        const columnCount = withPhotos ? 20 : 19;
         let idx = 0;
         const body = groupedByClass(rows).map(([cls,students]) => {
             const studentRows = students.map(s => {
                 idx++;
+                const photoSrc = withPhotos ? safePhotoSrc(s.photo) : "";
+                const photoCell = withPhotos
+                    ? `<td class="photo-col">${photoSrc ? `<img src="${esc(photoSrc)}" class="print-list-photo" alt="រូបថត">` : ""}</td>`
+                    : "";
                 return `<tr>
                     <td class="num-col">${idx}</td>
+                    ${photoCell}
                     <td style="font-family: monospace; font-size: 10.5px; text-align: center;">${esc(studentVisibleId(s)||"")}</td>
                     <td style="font-weight: 600;">${esc(s.studentName||"")}</td>
                     <td class="center-col">${esc(s.gender||"")}</td>
@@ -4582,9 +4685,9 @@
                     <td class="center-col">${esc(s.gpa||"")}</td>
                 </tr>`;
             }).join("");
-            return `<tr class="class-row"><td colspan="19">ថ្នាក់ ${esc(cls)} – ${students.length} នាក់</td></tr>${studentRows}`;
+            return `<tr class="class-row"><td colspan="${columnCount}">ថ្នាក់ ${esc(cls)} – ${students.length} នាក់</td></tr>${studentRows}`;
         }).join("");
-        printWindow("បញ្ជីសិស្ស",`
+        printWindow(withPhotos ? "បញ្ជីសិស្សមានរូបថត" : "បញ្ជីសិស្ស",`
             <style>
                 @page { size: A4 landscape; margin: 10mm; }
                 table { width: 100%; border-collapse: collapse; margin-top: 15px; }
@@ -4593,6 +4696,8 @@
                 .class-row td { background: #e0f2fe; color: #0369a1; font-weight: 700; font-size: 12px; border-top: 2px solid #9ca3af; }
                 td.num-col { text-align: center; }
                 td.center-col { text-align: center; }
+                td.photo-col { width: 48px; text-align: center; padding: 3px; }
+                .print-list-photo { width: 34px; height: 44px; object-fit: cover; border: 1px solid #9ca3af; display: block; margin: 0 auto; }
             </style>
             <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
                 <div style="text-align: center; font-weight: bold; font-size: 12px; line-height: 1.6;">
@@ -4614,6 +4719,7 @@
                 <thead>
                     <tr>
                         <th rowspan="2" style="width: 40px;">ល.រ</th>
+                        ${withPhotos ? `<th rowspan="2" style="width: 48px;">រូបថត</th>` : ""}
                         <th rowspan="2" style="width: 80px;">អត្តលេខ</th>
                         <th rowspan="2" style="min-width: 140px;">គោត្តនាម-នាម</th>
                         <th rowspan="2" style="width: 50px;">ភេទ</th>
@@ -4902,6 +5008,7 @@
         els.choosePhotoBtn?.addEventListener("click",()=>els.photoUploadInput?.click());
         els.photoUploadInput?.addEventListener("change",handlePhotoUpload);
         els.cancelCamBtn?.addEventListener("click",closeCameraModal);
+        els.switchCamBtn?.addEventListener("click",switchCamera);
         els.captureCamBtn?.addEventListener("click",capturePhoto);
         els.cameraModal?.addEventListener("click",e=>{if(e.target===els.cameraModal)closeCameraModal();});
 
@@ -4924,7 +5031,8 @@
         els.importFileBtn.addEventListener("click",()=>els.importFileInput.click());
         els.importFileInput.addEventListener("change",()=>{const f=els.importFileInput.files?.[0];if(f)importStudentsFromFile(f);});
         els.downloadTemplateBtn.addEventListener("click",downloadExcelTemplate);
-        els.printListBtn.addEventListener("click",printStudentList);
+        els.printListBtn.addEventListener("click",()=>printStudentList(false));
+        els.printPhotoListBtn?.addEventListener("click",()=>printStudentList(true));
         els.downloadCsvBtn.addEventListener("click",downloadCSV);
         els.deleteAllBtn.addEventListener("click",openDeleteAllModal);
 
@@ -4989,6 +5097,7 @@
             "m-download-template-btn": els.downloadTemplateBtn,
             "m-import-file-btn": els.importFileBtn,
             "m-print-list-btn": els.printListBtn,
+            "m-print-photo-list-btn": els.printPhotoListBtn,
             "m-download-csv-btn": els.downloadCsvBtn,
             "m-delete-all-btn": els.deleteAllBtn
         };
