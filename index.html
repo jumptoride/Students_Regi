@@ -1700,8 +1700,8 @@
             gap: 16px;
         }
         .photo-preview {
-            width: 100px;
-            height: 130px;
+            width: 105px;
+            height: 133px;
             border-radius: var(--radius-sm);
             border: 2px dashed var(--border-strong);
             background: var(--surface-3);
@@ -1783,7 +1783,7 @@
             }
             .photo-preview {
                 width: 86px;
-                height: 112px;
+                height: 109px;
             }
             .photo-actions .btn {
                 min-height: 42px;
@@ -3564,6 +3564,9 @@
     const PHOTO_BG_REMOVAL_URL = "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.3/+esm";
     const SELFIE_SEGMENTATION_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js";
     const SELFIE_SEGMENTATION_ASSET_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/";
+    const STUDENT_PHOTO_WIDTH = 315;
+    const STUDENT_PHOTO_HEIGHT = 400;
+    const STUDENT_PHOTO_BLUE = "#3b86ee";
 
     async function openCameraModal() {
         if (!navigator.mediaDevices?.getUserMedia) {
@@ -3747,29 +3750,8 @@
     }
 
     function drawSkyBackground(ctx, width, height) {
-        const gradient = ctx.createLinearGradient(0, 0, 0, height);
-        gradient.addColorStop(0, "#b9e8ff");
-        gradient.addColorStop(0.45, "#5bb8ff");
-        gradient.addColorStop(1, "#1677d2");
-        ctx.fillStyle = gradient;
+        ctx.fillStyle = STUDENT_PHOTO_BLUE;
         ctx.fillRect(0, 0, width, height);
-
-        ctx.save();
-        ctx.globalAlpha = 0.42;
-        ctx.fillStyle = "#ffffff";
-        [
-            { x: 54, y: 64, s: 1 },
-            { x: 222, y: 96, s: .86 },
-            { x: 144, y: 34, s: .62 }
-        ].forEach(cloud => {
-            ctx.beginPath();
-            ctx.arc(cloud.x, cloud.y, 18 * cloud.s, Math.PI, 0);
-            ctx.arc(cloud.x + 22 * cloud.s, cloud.y - 8 * cloud.s, 26 * cloud.s, Math.PI, 0);
-            ctx.arc(cloud.x + 52 * cloud.s, cloud.y, 20 * cloud.s, Math.PI, 0);
-            ctx.rect(cloud.x - 18 * cloud.s, cloud.y, 92 * cloud.s, 18 * cloud.s);
-            ctx.fill();
-        });
-        ctx.restore();
     }
 
     function getAlphaBounds(img) {
@@ -3805,15 +3787,15 @@
 
     function composeStudentPhoto(img, hasTransparentSubject) {
         const canvas = document.createElement("canvas");
-        canvas.width = 300;
-        canvas.height = 400;
+        canvas.width = STUDENT_PHOTO_WIDTH;
+        canvas.height = STUDENT_PHOTO_HEIGHT;
         const ctx = canvas.getContext("2d");
         drawSkyBackground(ctx, canvas.width, canvas.height);
 
         if (hasTransparentSubject) {
             const bounds = getAlphaBounds(img);
             const source = bounds || { x:0, y:0, w:img.naturalWidth || img.width, h:img.naturalHeight || img.height };
-            const scale = Math.min((canvas.width - 26) / source.w, (canvas.height - 10) / source.h);
+            const scale = Math.max((canvas.width * 1.04) / source.w, (canvas.height * 0.925) / source.h);
             const w = source.w * scale;
             const h = source.h * scale;
             const x = (canvas.width - w) / 2;
@@ -3842,10 +3824,10 @@
             setPhotoProcessing(true, "កំពុងកាត់មនុស្សចេញពីផ្ទៃក្រោយ...");
             const segmentedBlob = await segmentPersonWithMediaPipe(originalImg);
             subjectImg = await loadImageFromBlob(segmentedBlob);
-            setPhotoProcessing(true, "កំពុងដាក់ផ្ទៃមេឃពណ៌ខៀវ...");
+            setPhotoProcessing(true, "កំពុងដាក់ផ្ទៃក្រោយពណ៌ខៀវ...");
             const base64 = composeStudentPhoto(subjectImg, true);
             setPhotoPreview(base64);
-            showToast("បានកាត់ផ្ទៃក្រោយ និងដាក់ផ្ទៃមេឃពណ៌ខៀវ");
+            showToast("បានកាត់ផ្ទៃក្រោយ និងដាក់ផ្ទៃខៀវតាមគំរូ");
             closeCameraModal();
         } catch (err) {
             console.warn("MediaPipe segmentation failed:", err);
@@ -3855,7 +3837,7 @@
                 subjectImg = await loadImageFromBlob(processedBlob);
                 const base64 = composeStudentPhoto(subjectImg, true);
                 setPhotoPreview(base64);
-                showToast("បានកាត់ផ្ទៃក្រោយ និងដាក់ផ្ទៃមេឃពណ៌ខៀវ");
+                showToast("បានកាត់ផ្ទៃក្រោយ និងដាក់ផ្ទៃខៀវតាមគំរូ");
                 closeCameraModal();
             } catch (fallbackErr) {
                 console.error("Photo processing error:", fallbackErr);
