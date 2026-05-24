@@ -20,7 +20,6 @@ create table if not exists public.students (
   current_commune text,
   current_district text,
   current_province text,
-  gpa text,
   photo text,
   created_at text,
   updated_at text

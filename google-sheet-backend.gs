@@ -22,7 +22,6 @@ const HEADERS = [
   "currentCommune",
   "currentDistrict",
   "currentProvince",
-  "gpa",
   "photo",
   "createdAt",
   "updatedAt"
@@ -47,7 +46,6 @@ const HEADER_LABELS = {
   currentCommune: "ឃុំ/សង្កាត់បច្ចុប្បន្ន",
   currentDistrict: "ស្រុក/ខណ្ឌបច្ចុប្បន្ន",
   currentProvince: "ខេត្ត/ក្រុងបច្ចុប្បន្ន",
-  gpa: "មធ្យមភាគ",
   photo: "រូបថត",
   createdAt: "បង្កើតនៅ",
   updatedAt: "កែចុងក្រោយ"
@@ -71,15 +69,14 @@ const VIEW_FIELDS = [
   "currentCommune",
   "currentDistrict",
   "currentProvince",
-  "gpa",
   "photo"
 ];
 
 const HEADER_ROW = HEADERS.map(function(key) { return HEADER_LABELS[key] || key; });
 const VIEW_HEADER_ROW = VIEW_FIELDS.map(function(key) { return HEADER_LABELS[key] || key; });
 
-const STUDENT_COLUMN_WIDTHS = [90, 95, 170, 60, 105, 80, 165, 115, 135, 135, 135, 120, 130, 130, 125, 150, 150, 150, 85, 100, 145, 145];
-const VIEW_COLUMN_WIDTHS = [95, 170, 60, 105, 80, 165, 120, 130, 130, 115, 135, 135, 135, 125, 150, 150, 150, 85, 100];
+const STUDENT_COLUMN_WIDTHS = [90, 95, 170, 60, 105, 80, 165, 115, 135, 135, 135, 120, 130, 130, 125, 150, 150, 150, 100, 145, 145];
+const VIEW_COLUMN_WIDTHS = [95, 170, 60, 105, 80, 165, 120, 130, 130, 115, 135, 135, 135, 125, 150, 150, 150, 100];
 const CLASS_TAB_COLORS = ["#0f766e", "#2563eb", "#7c3aed", "#15803d", "#b45309", "#be123c", "#0891b2", "#4f46e5"];
 
 function doGet(e) {
@@ -325,7 +322,7 @@ function rebuildDashboard_(ss, students) {
   sheet.getRangeList(["B4", "D4", "F4", "H4"]).setFontSize(18).setFontColor("#0f766e");
 
   sheet.getRange(6, 1, 1, 8).setValues([[
-    "ថ្នាក់", "សរុប", "ប្រុស", "ស្រី", "សាលា", "មធ្យមភាគ", "មានទូរស័ព្ទ", "សម្គាល់"
+    "ថ្នាក់", "សរុប", "ប្រុស", "ស្រី", "សាលា", "មានទូរស័ព្ទ", "មានរូបថត", "សម្គាល់"
   ]]);
   styleHeader_(sheet.getRange(6, 1, 1, 8));
 
@@ -338,8 +335,8 @@ function rebuildDashboard_(ss, students) {
       items.filter(function(s) { return s.gender === "ប្រុស"; }).length,
       items.filter(function(s) { return s.gender === "ស្រី"; }).length,
       countUnique_(items, "fromSchool"),
-      averageGpa_(items),
       items.filter(function(s) { return String(s.contact || "").trim() !== ""; }).length,
+      items.filter(function(s) { return String(s.photo || "").trim() !== ""; }).length,
       ""
     ];
   });
@@ -459,7 +456,6 @@ function formatStudentsSheet_(sheet) {
     sheet.getRange(2, 2, lastRow - 1, 1).setNumberFormat("@");
     sheet.getRange(2, 5, lastRow - 1, 1).setNumberFormat("yyyy-mm-dd");
     sheet.getRange(2, 12, lastRow - 1, 1).setNumberFormat("@");
-    sheet.getRange(2, 19, lastRow - 1, 1).setNumberFormat("0.00");
   }
   applyBanding_(sheet, 1, 1, Math.max(lastRow, 2), HEADERS.length);
   recreateFilter_(sheet, 1, 1, Math.max(lastRow, 2), HEADERS.length);
@@ -479,10 +475,8 @@ function formatViewSheet_(sheet, colCount, frozenRows) {
   if (lastRow > 1) {
     const dobCol = VIEW_FIELDS.indexOf("dob") + 1;
     const phoneCol = VIEW_FIELDS.indexOf("contact") + 1;
-    const gpaCol = VIEW_FIELDS.indexOf("gpa") + 1;
     if (dobCol > 0) sheet.getRange(1, dobCol, lastRow, 1).setNumberFormat("yyyy-mm-dd");
     if (phoneCol > 0) sheet.getRange(1, phoneCol, lastRow, 1).setNumberFormat("@");
-    if (gpaCol > 0) sheet.getRange(1, gpaCol, lastRow, 1).setNumberFormat("0.00");
   }
   sheet.setRowHeights(1, lastRow, 30);
 }
@@ -552,15 +546,6 @@ function countUnique_(students, key) {
     if (value) seen[value] = true;
   });
   return Object.keys(seen).length;
-}
-
-function averageGpa_(students) {
-  const values = students
-    .map(function(student) { return parseFloat(String(student.gpa || "").replace(",", ".")); })
-    .filter(function(value) { return !isNaN(value); });
-  if (!values.length) return "";
-  const total = values.reduce(function(sum, value) { return sum + value; }, 0);
-  return Math.round((total / values.length) * 100) / 100;
 }
 
 function sanitizeSheetName_(name) {

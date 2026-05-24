@@ -1380,6 +1380,16 @@
         .sheet-menu-item.danger-item { grid-column: 1 / -1; min-height: 48px; flex-direction: row; color: var(--red); background: var(--red-soft); }
         .sheet-menu-item.danger-item ion-icon { color: var(--red); }
 
+        @media (max-width: 1320px) {
+            .topbar-actions .action-group .btn {
+                width: 36px;
+                padding: 0;
+            }
+            .topbar-actions .action-group .btn span {
+                display: none;
+            }
+        }
+
         @media (max-width: 1100px) {
             .main-layout { grid-template-columns: 1fr; }
             .form-panel { position: static; }
@@ -1884,6 +1894,14 @@
                     <ion-icon name="images-outline" aria-hidden="true"></ion-icon>
                     <span>Print រូបថត</span>
                 </button>
+                <button id="print-name-list-btn" class="btn btn-ghost" type="button" title="Print Names By Class">
+                    <ion-icon name="list-outline" aria-hidden="true"></ion-icon>
+                    <span>Print ឈ្មោះ</span>
+                </button>
+                <button id="print-card-list-btn" class="btn btn-ghost" type="button" title="Print Student Cards">
+                    <ion-icon name="id-card-outline" aria-hidden="true"></ion-icon>
+                    <span>កាតសិស្ស</span>
+                </button>
                 <button id="download-csv-btn" class="btn btn-primary" type="button" title="Download CSV">
                     <ion-icon name="download-outline" aria-hidden="true"></ion-icon>
                     <span>CSV</span>
@@ -2042,7 +2060,8 @@
                                 </div>
                                 <div class="field">
                                     <label for="dob" class="required">ថ្ងៃខែឆ្នាំកំណើត</label>
-                                    <input id="dob" name="dob" type="date" required>
+                                    <input id="dob" name="dob" type="text" inputmode="numeric" required
+                                           placeholder="ឧ. 15/05/2010">
                                 </div>
                                 <div class="field">
                                     <label for="fatherName">ឈ្មោះឪពុក</label>
@@ -2068,19 +2087,27 @@
                             <div class="field-grid">
                                 <div class="field">
                                     <label for="pobProvince">ខេត្ត/រាជធានី</label>
-                                    <select id="pobProvince" name="pobProvince"></select>
+                                    <input id="pobProvince" name="pobProvince" type="text" list="pobProvinceList"
+                                           placeholder="ជ្រើស ឬវាយខេត្ត/រាជធានី" autocomplete="off">
+                                    <datalist id="pobProvinceList"></datalist>
                                 </div>
                                 <div class="field">
                                     <label for="pobDistrict">ស្រុក/ខណ្ឌ</label>
-                                    <select id="pobDistrict" name="pobDistrict" disabled></select>
+                                    <input id="pobDistrict" name="pobDistrict" type="text" list="pobDistrictList"
+                                           placeholder="ជ្រើស ឬវាយស្រុក/ខណ្ឌ" autocomplete="off" disabled>
+                                    <datalist id="pobDistrictList"></datalist>
                                 </div>
                                 <div class="field">
                                     <label for="pobCommune">ឃុំ/សង្កាត់</label>
-                                    <select id="pobCommune" name="pobCommune" disabled></select>
+                                    <input id="pobCommune" name="pobCommune" type="text" list="pobCommuneList"
+                                           placeholder="ជ្រើស ឬវាយឃុំ/សង្កាត់" autocomplete="off" disabled>
+                                    <datalist id="pobCommuneList"></datalist>
                                 </div>
                                 <div class="field">
                                     <label for="pobVillage">ភូមិ</label>
-                                    <select id="pobVillage" name="pobVillage" disabled></select>
+                                    <input id="pobVillage" name="pobVillage" type="text" list="pobVillageList"
+                                           placeholder="ជ្រើស ឬវាយភូមិ" autocomplete="off" disabled>
+                                    <datalist id="pobVillageList"></datalist>
                                 </div>
                             </div>
                         </div>
@@ -2102,19 +2129,27 @@
                             <div class="field-grid">
                                 <div class="field">
                                     <label for="currentProvince">ខេត្ត/រាជធានី</label>
-                                    <select id="currentProvince" name="currentProvince"></select>
+                                    <input id="currentProvince" name="currentProvince" type="text" list="currentProvinceList"
+                                           placeholder="ជ្រើស ឬវាយខេត្ត/រាជធានី" autocomplete="off">
+                                    <datalist id="currentProvinceList"></datalist>
                                 </div>
                                 <div class="field">
                                     <label for="currentDistrict">ស្រុក/ខណ្ឌ</label>
-                                    <select id="currentDistrict" name="currentDistrict" disabled></select>
+                                    <input id="currentDistrict" name="currentDistrict" type="text" list="currentDistrictList"
+                                           placeholder="ជ្រើស ឬវាយស្រុក/ខណ្ឌ" autocomplete="off" disabled>
+                                    <datalist id="currentDistrictList"></datalist>
                                 </div>
                                 <div class="field">
                                     <label for="currentCommune">ឃុំ/សង្កាត់</label>
-                                    <select id="currentCommune" name="currentCommune" disabled></select>
+                                    <input id="currentCommune" name="currentCommune" type="text" list="currentCommuneList"
+                                           placeholder="ជ្រើស ឬវាយឃុំ/សង្កាត់" autocomplete="off" disabled>
+                                    <datalist id="currentCommuneList"></datalist>
                                 </div>
                                 <div class="field">
                                     <label for="currentVillage">ភូមិ</label>
-                                    <select id="currentVillage" name="currentVillage" disabled></select>
+                                    <input id="currentVillage" name="currentVillage" type="text" list="currentVillageList"
+                                           placeholder="ជ្រើស ឬវាយភូមិ" autocomplete="off" disabled>
+                                    <datalist id="currentVillageList"></datalist>
                                 </div>
                             </div>
                         </div>
@@ -2149,10 +2184,6 @@
                                 <div class="field">
                                     <label for="className">ថ្នាក់</label>
                                     <input id="className" name="className" type="text" placeholder="ឧ. 7A">
-                                </div>
-                                <div class="field">
-                                    <label for="gpa">មធ្យមភាគ</label>
-                                    <input id="gpa" name="gpa" type="number" min="0" max="100" step="0.01" placeholder="85">
                                 </div>
                                 <div class="field field-full">
                                     <label for="contact" class="required">លេខទូរស័ព្ទ</label>
@@ -2234,8 +2265,7 @@
                             <th rowspan="2" style="min-width:100px; vertical-align:middle;">ឈ្មោះឪពុក</th>
                             <th rowspan="2" style="min-width:100px; vertical-align:middle;">ឈ្មោះម្តាយ</th>
                             <th colspan="4" style="text-align:center; border-bottom:1px solid var(--border);">អាសយដ្ឋានបច្ចុប្បន្ន</th>
-                            <th rowspan="2" style="width:80px; text-align:center; vertical-align:middle;">មធ្យមភាគ</th>
-                            <th rowspan="2" style="width:110px; text-align:center; vertical-align:middle;">សកម្មភាព</th>
+                            <th rowspan="2" style="width:140px; text-align:center; vertical-align:middle;">សកម្មភាព</th>
                         </tr>
                         <tr>
                             <th style="font-size:.78rem; text-align:center;">ភូមិ</th>
@@ -2250,7 +2280,7 @@
                     </thead>
                     <tbody id="student-list">
                         <tr class="skeleton-row">
-                            <td colspan="20">
+                            <td colspan="19">
                                 <div class="skeleton skeleton-line" style="width:60%;height:16px"></div>
                             </td>
                         </tr>
@@ -2470,6 +2500,14 @@
             <ion-icon name="images-outline" aria-hidden="true"></ion-icon>
             <span>Print រូបថត</span>
         </button>
+        <button id="m-print-name-list-btn" class="sheet-menu-item" type="button">
+            <ion-icon name="list-outline" aria-hidden="true"></ion-icon>
+            <span>Print ឈ្មោះ</span>
+        </button>
+        <button id="m-print-card-list-btn" class="sheet-menu-item" type="button">
+            <ion-icon name="id-card-outline" aria-hidden="true"></ion-icon>
+            <span>កាតសិស្ស</span>
+        </button>
         <button id="m-download-csv-btn" class="sheet-menu-item" type="button">
             <ion-icon name="download-outline" aria-hidden="true"></ion-icon>
             <span>CSV</span>
@@ -2530,7 +2568,6 @@
         currentCommune: "current_commune",
         currentDistrict: "current_district",
         currentProvince: "current_province",
-        gpa: "gpa",
         photo: "photo",
         createdAt: "created_at",
         updatedAt: "updated_at"
@@ -2775,6 +2812,8 @@
         importFileInput: document.getElementById("import-file-input"),
         printListBtn: document.getElementById("print-list-btn"),
         printPhotoListBtn: document.getElementById("print-photo-list-btn"),
+        printNameListBtn: document.getElementById("print-name-list-btn"),
+        printCardListBtn: document.getElementById("print-card-list-btn"),
         downloadCsvBtn: document.getElementById("download-csv-btn"),
         deleteAllBtn: document.getElementById("delete-all-btn"),
         deleteModal: document.getElementById("delete-modal"),
@@ -2837,17 +2876,17 @@
         "studentCode","studentName","dob","fatherName","motherName",
         "pobProvince","pobDistrict","pobCommune","pobVillage",
         "currentProvince","currentDistrict","currentCommune","currentVillage",
-        "fromSchool","className","gpa","contact"
+        "fromSchool","className","contact"
     ];
 
     const STUDENT_TEMPLATE_TOP_HEADERS = [
         "អត្តលេខ", "គោត្តនាម-នាម", "ភេទ", "ថ្ងៃកំណើត", "ថ្នាក់", "សាលា",
         "ទីកន្លែងកំណើត", "", "", "", "លេខទូរស័ព្ទ", "ឈ្មោះឪពុក", "ឈ្មោះម្តាយ",
-        "អាសយដ្ឋានបច្ចុប្បន្ន", "", "", "", "មធ្យមភាគ"
+        "អាសយដ្ឋានបច្ចុប្បន្ន", "", "", ""
     ];
     const STUDENT_TEMPLATE_SUB_HEADERS = [
         "", "", "", "", "", "", "ភូមិ", "ឃុំ/សង្កាត់", "ស្រុក/ខណ្ឌ", "ខេត្ត/ក្រុង",
-        "", "", "", "ភូមិ", "ឃុំ/សង្កាត់", "ស្រុក/ខណ្ឌ", "ខេត្ត/ក្រុង", ""
+        "", "", "", "ភូមិ", "ឃុំ/សង្កាត់", "ស្រុក/ខណ្ឌ", "ខេត្ត/ក្រុង"
     ];
     const STUDENT_CSV_HEADERS = [
         "អត្តលេខ", "គោត្តនាម-នាម", "ភេទ", "ថ្ងៃកំណើត", "ថ្នាក់", "សាលា",
@@ -2855,26 +2894,25 @@
         "ទីកន្លែងកំណើត - ស្រុក/ខណ្ឌ", "ទីកន្លែងកំណើត - ខេត្ត/ក្រុង",
         "លេខទូរស័ព្ទ", "ឈ្មោះឪពុក", "ឈ្មោះម្តាយ",
         "អាសយដ្ឋានបច្ចុប្បន្ន - ភូមិ", "អាសយដ្ឋានបច្ចុប្បន្ន - ឃុំ/សង្កាត់",
-        "អាសយដ្ឋានបច្ចុប្បន្ន - ស្រុក/ខណ្ឌ", "អាសយដ្ឋានបច្ចុប្បន្ន - ខេត្ត/ក្រុង",
-        "មធ្យមភាគ"
+        "អាសយដ្ឋានបច្ចុប្បន្ន - ស្រុក/ខណ្ឌ", "អាសយដ្ឋានបច្ចុប្បន្ន - ខេត្ត/ក្រុង"
     ];
     const STUDENT_IMPORT_FIELDS = [
         "studentCode", "studentName", "gender", "dob", "className", "fromSchool",
         "pobVillage", "pobCommune", "pobDistrict", "pobProvince",
         "contact", "fatherName", "motherName",
-        "currentVillage", "currentCommune", "currentDistrict", "currentProvince", "gpa"
+        "currentVillage", "currentCommune", "currentDistrict", "currentProvince"
     ];
     const STUDENT_DATA_FIELDS = [
         "studentName", "gender", "dob", "className", "fromSchool",
         "pobVillage", "pobCommune", "pobDistrict", "pobProvince",
         "contact", "fatherName", "motherName",
-        "currentVillage", "currentCommune", "currentDistrict", "currentProvince", "gpa", "photo"
+        "currentVillage", "currentCommune", "currentDistrict", "currentProvince", "photo"
     ];
     const STUDENT_TEMPLATE_EXAMPLE = [
         "", "(ឧ.) ហ៊ុន ណារ", "ប្រុស", "15/05/2010", "7A", "សាលាបឋមសិក្សាព្រៃខ្លា",
         "ព្រៃមេលងខាងជើង", "ព្រៃខ្លា", "ស្រុកកោះអណ្តែត", "ខេត្តតាកែវ",
         "012345678", "ហ៊ុន សក្កដា", "គង់ សុភី",
-        "ព្រៃមេលងខាងជើង", "ព្រៃខ្លា", "ស្រុកកោះអណ្តែត", "ខេត្តតាកែវ", "85"
+        "ព្រៃមេលងខាងជើង", "ព្រៃខ្លា", "ស្រុកកោះអណ្តែត", "ខេត្តតាកែវ"
     ];
     const STUDENT_TEMPLATE_MERGES = [
         { s: { r: 3, c: 0 }, e: { r: 4, c: 0 } },
@@ -2887,13 +2925,12 @@
         { s: { r: 3, c: 10 }, e: { r: 4, c: 10 } },
         { s: { r: 3, c: 11 }, e: { r: 4, c: 11 } },
         { s: { r: 3, c: 12 }, e: { r: 4, c: 12 } },
-        { s: { r: 3, c: 13 }, e: { r: 3, c: 16 } },
-        { s: { r: 3, c: 17 }, e: { r: 4, c: 17 } }
+        { s: { r: 3, c: 13 }, e: { r: 3, c: 16 } }
     ];
     const STUDENT_TEMPLATE_COLS = [
         {wch:15}, {wch:22}, {wch:10}, {wch:15}, {wch:10}, {wch:22},
         {wch:16}, {wch:16}, {wch:16}, {wch:16}, {wch:15}, {wch:18},
-        {wch:18}, {wch:16}, {wch:16}, {wch:16}, {wch:16}, {wch:12}
+        {wch:18}, {wch:16}, {wch:16}, {wch:16}, {wch:16}
     ];
 
     // ===================== UTILITY =====================
@@ -2954,7 +2991,7 @@
             studentVisibleId(s), s.studentName, s.gender, formatDate(s.dob), s.className, s.fromSchool,
             s.pobVillage, s.pobCommune, s.pobDistrict, s.pobProvince,
             s.contact, s.fatherName, s.motherName,
-            s.currentVillage, s.currentCommune, s.currentDistrict, s.currentProvince, s.gpa
+            s.currentVillage, s.currentCommune, s.currentDistrict, s.currentProvince
         ];
     }
 
@@ -3480,6 +3517,17 @@
     function populateSelect(sel, items, placeholder, selected="") {
         const vals = [...new Set((items||[]).filter(Boolean))];
         if (selected && !vals.includes(selected)) vals.push(selected);
+        if (sel.list) {
+            sel.list.innerHTML = "";
+            vals.forEach(v => {
+                const option = document.createElement("option");
+                option.value = v;
+                sel.list.append(option);
+            });
+            sel.placeholder = placeholder.replace("ជ្រើសរើស", "ជ្រើស ឬវាយ");
+            sel.value = selected || "";
+            return;
+        }
         sel.innerHTML = "";
         sel.append(new Option(placeholder, ""));
         vals.forEach(v => sel.append(new Option(v, v)));
@@ -3521,7 +3569,11 @@
     function syncCurrentFromBirth() { setAddressGroup(currentGroup, readAddressGroup(pobGroup)); lockCurrentAddress(els.sameAddress.checked); }
 
     function setupAddressListeners(g, onChange) {
-        g.province.addEventListener("change", () => {
+        const listen = (field, handler) => {
+            field.addEventListener("input", handler);
+            field.addEventListener("change", handler);
+        };
+        listen(g.province, () => {
             const p = g.province.value;
             populateSelect(g.district, p ? Object.keys(cambodiaData[p]||{}) : [], "ជ្រើសរើសស្រុក/ខណ្ឌ");
             populateSelect(g.commune, [], "ជ្រើសរើសឃុំ/សង្កាត់");
@@ -3529,20 +3581,20 @@
             g.district.disabled = !p; g.commune.disabled = true; g.village.disabled = true;
             onChange?.();
         });
-        g.district.addEventListener("change", () => {
+        listen(g.district, () => {
             const p=g.province.value, d=g.district.value;
             populateSelect(g.commune, p&&d ? Object.keys(cambodiaData[p]?.[d]||{}) : [], "ជ្រើសរើសឃុំ/សង្កាត់");
             populateSelect(g.village, [], "ជ្រើសរើសភូមិ");
             g.commune.disabled = !(p&&d); g.village.disabled = true;
             onChange?.();
         });
-        g.commune.addEventListener("change", () => {
+        listen(g.commune, () => {
             const p=g.province.value, d=g.district.value, c=g.commune.value;
             populateSelect(g.village, p&&d&&c ? (cambodiaData[p]?.[d]?.[c]||[]) : [], "ជ្រើសរើសភូមិ");
             g.village.disabled = !(p&&d&&c);
             onChange?.();
         });
-        g.village.addEventListener("change", () => onChange?.());
+        listen(g.village, () => onChange?.());
     }
 
     // ===================== DUPLICATE CHECK =====================
@@ -3976,7 +4028,7 @@
             studentCode: getValue("studentCode"),
             studentName: getValue("studentName"),
             gender: document.querySelector('input[name="gender"]:checked')?.value || "ប្រុស",
-            dob: getValue("dob"),
+            dob: normDate(getValue("dob")),
             fatherName: getValue("fatherName"),
             motherName: getValue("motherName"),
             pobProvince: pobGroup.province.value,
@@ -3989,7 +4041,6 @@
             currentVillage: currentGroup.village.value,
             fromSchool: els.fromSchool.value,
             className: getValue("className"),
-            gpa: getValue("gpa"),
             contact: getValue("contact"),
             photo: getValue("studentPhotoData")
         };
@@ -4276,7 +4327,7 @@
     }
 
     function studentSearchText(s) {
-        return [studentDisplayId(s),s.studentName,s.gender,s.dob,s.fatherName,s.motherName,s.fromSchool,s.className,s.gpa,s.contact,addressText(s,"pob"),addressText(s,"current")].filter(Boolean).join(" ").toLowerCase();
+        return [studentDisplayId(s),s.studentName,s.gender,s.dob,s.fatherName,s.motherName,s.fromSchool,s.className,s.contact,addressText(s,"pob"),addressText(s,"current")].filter(Boolean).join(" ").toLowerCase();
     }
 
     function applyFilters() {
@@ -4368,7 +4419,6 @@
                 <td><div class="skeleton skeleton-line" style="width:50px"></div></td>
                 <td><div class="skeleton skeleton-line" style="width:50px"></div></td>
                 <td><div class="skeleton skeleton-line" style="width:60px"></div></td>
-                <td><div class="skeleton skeleton-line" style="width:40px"></div></td>
                 <td></td>
             </tr>`
         ).join("");
@@ -4381,7 +4431,7 @@
 
         if (visibleStudents.length === 0) {
             els.studentList.innerHTML = `
-                <tr><td colspan="20">
+                <tr><td colspan="19">
                     <div class="empty">
                         <ion-icon name="person-outline"></ion-icon>
                         <p>មិនមានទិន្នន័យ</p>
@@ -4427,11 +4477,13 @@
                         <td>${esc(s.currentCommune||"–")}</td>
                         <td>${esc(s.currentDistrict||"–")}</td>
                         <td>${esc(s.currentProvince||"–")}</td>
-                        <td style="text-align:center;">${esc(s.gpa||"–")}</td>
                         <td>
                             <div class="row-actions">
                                 <button class="btn btn-icon print-student-btn" type="button" title="Print" data-id="${esc(s.id)}">
                                     <ion-icon name="print-outline"></ion-icon>
+                                </button>
+                                <button class="btn btn-icon print-student-card-btn" type="button" title="កាតសិស្ស" data-id="${esc(s.id)}">
+                                    <ion-icon name="id-card-outline"></ion-icon>
                                 </button>
                                 <button class="btn btn-icon edit-btn" type="button" title="កែ" data-id="${esc(s.id)}">
                                     <ion-icon name="create-outline"></ion-icon>
@@ -4445,7 +4497,7 @@
             }).join("");
             return `
                 <tr class="class-group-row">
-                    <td colspan="20">ថ្នាក់ ${esc(cls)}<span class="class-count">${students.length} នាក់</span></td>
+                    <td colspan="19">ថ្នាក់ ${esc(cls)}<span class="class-count">${students.length} នាក់</span></td>
                 </tr>${rows}`;
         }).join("");
 
@@ -4477,6 +4529,9 @@
                                 <div class="mobile-quick-actions" aria-label="សកម្មភាពសិស្ស">
                                     <button class="btn btn-icon print-student-btn" type="button" title="Print" data-id="${esc(s.id)}">
                                         <ion-icon name="print-outline" aria-hidden="true"></ion-icon>
+                                    </button>
+                                    <button class="btn btn-icon print-student-card-btn" type="button" title="កាតសិស្ស" data-id="${esc(s.id)}">
+                                        <ion-icon name="id-card-outline" aria-hidden="true"></ion-icon>
                                     </button>
                                     <button class="btn btn-icon delete-btn" type="button" title="លុប" data-id="${esc(s.id)}" style="color:var(--red)">
                                         <ion-icon name="trash-outline" aria-hidden="true"></ion-icon>
@@ -4516,7 +4571,7 @@
         } catch(e) {
             console.error("Load page error:", e);
             setStatus("មានបញ្ហា","error");
-            els.studentList.innerHTML = `<tr><td colspan="20"><div class="empty"><p>ផ្ទុកទិន្នន័យមិនបាន</p></div></td></tr>`;
+            els.studentList.innerHTML = `<tr><td colspan="19"><div class="empty"><p>ផ្ទុកទិន្នន័យមិនបាន</p></div></td></tr>`;
         } finally {
             setPageLoading(false);
         }
@@ -4637,7 +4692,7 @@
             ["ថ្ងៃខែឆ្នាំកំណើត",formatDate(s.dob)],["ថ្នាក់",s.className],["សាលា",s.fromSchool],
             ["ទីកន្លែងកំណើត",addressText(s,"pob")],["លេខទូរស័ព្ទ",s.contact],
             ["ឈ្មោះឪពុក",s.fatherName],["ឈ្មោះម្តាយ",s.motherName],
-            ["អាសយដ្ឋានបច្ចុប្បន្ន",addressText(s,"current")],["មធ្យមភាគ",s.gpa]
+            ["អាសយដ្ឋានបច្ចុប្បន្ន",addressText(s,"current")]
         ].map(([l,v]) => `<tr><th>${esc(l)}</th><td>${esc(v||"–")}</td></tr>`).join("");
         printWindow("ពាក្យចុះឈ្មោះ",`
             <h1>ពាក្យចុះឈ្មោះសិស្ស</h1>
@@ -4653,7 +4708,7 @@
     function printStudentList(withPhotos = false) {
         const rows = hasActiveFilters() ? visibleStudents : allStudents;
         if (!rows.length) { showToast("មិនមានទិន្នន័យសម្រាប់បោះពុម្ព","warning"); return; }
-        const columnCount = withPhotos ? 20 : 19;
+        const columnCount = withPhotos ? 19 : 18;
         let idx = 0;
         const body = groupedByClass(rows).map(([cls,students]) => {
             const studentRows = students.map(s => {
@@ -4682,7 +4737,6 @@
                     <td>${esc(s.currentCommune||"")}</td>
                     <td>${esc(s.currentDistrict||"")}</td>
                     <td>${esc(s.currentProvince||"")}</td>
-                    <td class="center-col">${esc(s.gpa||"")}</td>
                 </tr>`;
             }).join("");
             return `<tr class="class-row"><td colspan="${columnCount}">ថ្នាក់ ${esc(cls)} – ${students.length} នាក់</td></tr>${studentRows}`;
@@ -4731,7 +4785,6 @@
                         <th rowspan="2" style="min-width: 100px;">ឈ្មោះឪពុក</th>
                         <th rowspan="2" style="min-width: 100px;">ឈ្មោះម្តាយ</th>
                         <th colspan="4">អាសយដ្ឋានបច្ចុប្បន្ន</th>
-                        <th rowspan="2" style="width: 60px;">មធ្យមភាគ</th>
                     </tr>
                     <tr>
                         <th style="width: 70px;">ភូមិ</th>
@@ -4746,6 +4799,98 @@
                 </thead>
                 <tbody>${body}</tbody>
             </table>`);
+    }
+
+    function printableRows() {
+        return hasActiveFilters() ? visibleStudents : allStudents;
+    }
+
+    function printStudentNameList() {
+        const rows = printableRows();
+        if (!rows.length) { showToast("មិនមានទិន្នន័យសម្រាប់បោះពុម្ព","warning"); return; }
+        const body = groupedByClass(rows).map(([cls, students]) => {
+            const studentRows = students.map((s, idx) => `<tr>
+                <td class="num-col">${idx + 1}</td>
+                <td style="font-family:monospace;text-align:center;">${esc(studentVisibleId(s)||"")}</td>
+                <td style="font-weight:700;">${esc(s.studentName||"")}</td>
+                <td class="center-col">${esc(s.gender||"")}</td>
+                <td class="center-col">${esc(formatDate(s.dob)||"")}</td>
+                <td class="center-col">${esc(s.contact||"")}</td>
+            </tr>`).join("");
+            return `<section class="name-class-block">
+                <h2>ថ្នាក់ ${esc(cls)} <span>${students.length} នាក់</span></h2>
+                <table>
+                    <thead><tr>
+                        <th style="width:42px;">ល.រ</th>
+                        <th style="width:90px;">អត្តលេខ</th>
+                        <th>គោត្តនាម-នាម</th>
+                        <th style="width:58px;">ភេទ</th>
+                        <th style="width:95px;">ថ្ងៃកំណើត</th>
+                        <th style="width:110px;">ទូរស័ព្ទ</th>
+                    </tr></thead>
+                    <tbody>${studentRows}</tbody>
+                </table>
+            </section>`;
+        }).join("");
+        printWindow("បញ្ជីឈ្មោះសិស្សតាមថ្នាក់",`
+            <style>
+                @page { size: A4; margin: 12mm; }
+                .name-class-block { break-inside: avoid; page-break-inside: avoid; margin-bottom: 16px; }
+                .name-class-block h2 { display:flex; justify-content:space-between; align-items:center; margin:14px 0 6px; padding:7px 10px; background:#ccfbf1; color:#115e59; border:1px solid #99f6e4; font-size:14px; }
+                .name-class-block h2 span { font-size:12px; color:#134e4a; }
+                th, td { font-size:12px; padding:6px 8px; }
+                .num-col, .center-col { text-align:center; }
+            </style>
+            <h1>បញ្ជីឈ្មោះសិស្សតាមថ្នាក់</h1>
+            <p class="meta">សរុប ${rows.length} នាក់ | ថ្ងៃបោះពុម្ព៖ ${esc(new Date().toLocaleDateString("km-KH"))}</p>
+            ${body}`);
+    }
+
+    function printStudentCards(students = null) {
+        const rows = students || printableRows();
+        if (!rows.length) { showToast("មិនមានទិន្នន័យសម្រាប់បោះពុម្ពកាត","warning"); return; }
+        const cards = rows.map(s => {
+            const photoSrc = safePhotoSrc(s.photo);
+            return `<article class="id-card">
+                <div class="id-card-top">
+                    <div class="school">វិទ្យាល័យសុខអានព្រៃមេលង</div>
+                    <div class="type">កាតសិស្ស</div>
+                </div>
+                <div class="id-card-body">
+                    <div class="id-photo">${photoSrc ? `<img src="${esc(photoSrc)}" alt="រូបថត">` : `<span class="id-photo-empty">រូបថត</span>`}</div>
+                    <div class="id-info">
+                        <div class="id-name">${esc(s.studentName||"")}</div>
+                        <div><span>អត្តលេខ</span>${esc(studentVisibleId(s)||"")}</div>
+                        <div><span>ថ្នាក់</span>${esc(s.className||"")}</div>
+                        <div><span>ភេទ</span>${esc(s.gender||"")}</div>
+                        <div><span>ថ្ងៃកំណើត</span>${esc(formatDate(s.dob)||"")}</div>
+                        <div><span>ទូរស័ព្ទ</span>${esc(s.contact||"")}</div>
+                    </div>
+                </div>
+            </article>`;
+        }).join("");
+        printWindow("កាតសិស្ស",`
+            <style>
+                @page { size: A4; margin: 8mm; }
+                body { background:#f8fafc; }
+                .cards-grid { display:grid; grid-template-columns:repeat(2, 86mm); gap:8mm 10mm; justify-content:center; }
+                .id-card { width:86mm; height:54mm; overflow:hidden; border:1.2px solid #0f766e; border-radius:4mm; background:#fff; break-inside:avoid; page-break-inside:avoid; box-shadow:0 1px 2px rgba(15,118,110,.18); }
+                .id-card-top { height:13mm; display:flex; justify-content:space-between; align-items:center; gap:3mm; padding:0 4mm; background:#0f766e; color:#fff; }
+                .school { font-size:10.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+                .type { font-size:10px; font-weight:700; padding:1mm 2mm; border:1px solid rgba(255,255,255,.6); border-radius:999px; white-space:nowrap; }
+                .id-card-body { display:grid; grid-template-columns:24mm 1fr; gap:3mm; padding:3mm 4mm; }
+                .id-photo { width:24mm; height:31mm; display:grid; place-items:center; overflow:hidden; border:1px solid #93c5fd; background:#3b86ee; color:#fff; }
+                .id-photo img { width:100%; height:100%; object-fit:cover; display:block; }
+                .id-photo-empty { font-size:9px; font-weight:700; }
+                .id-info { min-width:0; font-size:9.5px; line-height:1.45; color:#111827; }
+                .id-name { margin-bottom:1.5mm; font-size:13px; line-height:1.25; font-weight:700; color:#0f766e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+                .id-info div:not(.id-name) { display:grid; grid-template-columns:15mm 1fr; gap:2mm; }
+                .id-info span { color:#6b7280; font-weight:700; }
+                @media print { body { background:#fff; } .id-card { box-shadow:none; } }
+            </style>
+            <h1>កាតសិស្ស</h1>
+            <p class="meta">សរុប ${rows.length} នាក់ | ថ្ងៃបោះពុម្ព៖ ${esc(new Date().toLocaleDateString("km-KH"))}</p>
+            <div class="cards-grid">${cards}</div>`);
     }
 
     // ===================== IMPORT =====================
@@ -4768,7 +4913,6 @@
         address:["អាសយដ្ឋាន","address"],
         fromSchool:["សាលា","មកពីសាលា","fromSchool","school"],
         className:["ថ្នាក់","ថ្នាក់រៀន","ថ្នាក់ទី","កម្រិតថ្នាក់","កំរិតថ្នាក់","ក្រុមថ្នាក់","className","class name","class","grade","grade level","level"],
-        gpa:["មធ្យមភាគ","gpa","score"],
         contact:["ទំនាក់ទំនង","លេខទូរស័ព្ទ","ទូរស័ព្ទ","contact","phone","phone number"]
     };
 
@@ -4817,7 +4961,7 @@
             fatherName:r("fatherName")||guardian, motherName:r("motherName"),
             pobProvince:r("pobProvince"),pobDistrict:r("pobDistrict"),pobCommune:r("pobCommune"),pobVillage:r("pobVillage"),
             currentProvince:r("currentProvince"),currentDistrict:r("currentDistrict"),currentCommune:r("currentCommune"),currentVillage:r("currentVillage")||addr,
-            fromSchool:r("fromSchool"),className:r("className"),gpa:r("gpa"),contact:r("contact")
+            fromSchool:r("fromSchool"),className:r("className"),contact:r("contact")
         };
     }
     function parseCSV(text) {
@@ -4987,6 +5131,10 @@
         const btn=e.target.closest("button");if(!btn) return;
         const id=btn.dataset.id;
         if(btn.classList.contains("print-student-btn")) printStudent(id);
+        if(btn.classList.contains("print-student-card-btn")) {
+            const student = allStudents.find(i => i.id === id);
+            if (student) printStudentCards([student]);
+        }
         if(btn.classList.contains("edit-btn")) loadStudentIntoForm(id);
         if(btn.classList.contains("delete-btn")) openDeleteModal(id);
     }
@@ -5033,6 +5181,8 @@
         els.downloadTemplateBtn.addEventListener("click",downloadExcelTemplate);
         els.printListBtn.addEventListener("click",()=>printStudentList(false));
         els.printPhotoListBtn?.addEventListener("click",()=>printStudentList(true));
+        els.printNameListBtn?.addEventListener("click",printStudentNameList);
+        els.printCardListBtn?.addEventListener("click",()=>printStudentCards());
         els.downloadCsvBtn.addEventListener("click",downloadCSV);
         els.deleteAllBtn.addEventListener("click",openDeleteAllModal);
 
@@ -5098,6 +5248,8 @@
             "m-import-file-btn": els.importFileBtn,
             "m-print-list-btn": els.printListBtn,
             "m-print-photo-list-btn": els.printPhotoListBtn,
+            "m-print-name-list-btn": els.printNameListBtn,
+            "m-print-card-list-btn": els.printCardListBtn,
             "m-download-csv-btn": els.downloadCsvBtn,
             "m-delete-all-btn": els.deleteAllBtn
         };
