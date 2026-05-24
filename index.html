@@ -712,6 +712,15 @@
 
         tbody tr:nth-child(even) { background: var(--surface-2); }
         tbody tr:hover { background: var(--primary-soft) !important; }
+        tbody tr.student-data-complete { background: var(--surface) !important; }
+        tbody tr.student-data-partial { background: #fff7ed !important; }
+        tbody tr.student-data-empty { background: #fee2e2 !important; }
+        tbody tr.student-data-complete:hover { background: var(--primary-soft) !important; }
+        tbody tr.student-data-partial:hover { background: #fed7aa !important; }
+        tbody tr.student-data-empty:hover { background: #fecaca !important; }
+
+        [data-theme="dark"] tbody tr.student-data-partial { background: rgba(180, 83, 9, .22) !important; }
+        [data-theme="dark"] tbody tr.student-data-empty { background: rgba(185, 28, 28, .24) !important; }
 
         tbody td {
             padding: 10px 12px;
@@ -722,6 +731,37 @@
 
         .student-name { font-weight: 700; color: var(--text); }
         .student-meta { font-size: .78rem; color: var(--muted); margin-top: 2px; }
+
+        .student-name-button {
+            display: block;
+            width: 100%;
+            border: 0;
+            padding: 0;
+            margin: 0;
+            background: transparent;
+            color: inherit;
+            font: inherit;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .student-name-button:hover .student-name,
+        .student-name-button:focus-visible .student-name {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+
+        .student-name-button:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 3px;
+            border-radius: var(--radius-sm);
+        }
+
+        .table-student-name {
+            display: grid;
+            gap: 5px;
+            justify-items: start;
+        }
 
         /* Class group row */
         .class-group-row td {
@@ -773,6 +813,12 @@
             transition: all var(--transition);
         }
 
+        .student-card.student-data-complete { background: var(--surface); }
+        .student-card.student-data-partial { background: #fff7ed; border-color: #fdba74; }
+        .student-card.student-data-empty { background: #fee2e2; border-color: #fca5a5; }
+        [data-theme="dark"] .student-card.student-data-partial { background: rgba(180, 83, 9, .18); border-color: rgba(251, 146, 60, .55); }
+        [data-theme="dark"] .student-card.student-data-empty { background: rgba(185, 28, 28, .22); border-color: rgba(248, 113, 113, .55); }
+
         .student-card:hover { box-shadow: var(--shadow); border-color: var(--border-strong); }
 
         .card-head {
@@ -801,6 +847,103 @@
             font-weight: 700;
             font-size: .9rem;
             margin-bottom: 8px;
+        }
+
+        .data-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            min-height: 22px;
+            padding: 2px 7px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: var(--surface);
+            color: var(--muted);
+            font-size: .72rem;
+            font-weight: 700;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+
+        .data-status-badge ion-icon {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+        }
+
+        .data-status-badge.status-empty {
+            border-color: #fca5a5;
+            background: var(--red-soft);
+            color: var(--red);
+        }
+
+        .data-status-badge.status-partial {
+            border-color: #fdba74;
+            background: var(--amber-soft);
+            color: var(--amber);
+        }
+
+        .data-status-badge.status-complete {
+            border-color: #bbf7d0;
+            background: var(--surface);
+            color: var(--green);
+        }
+
+        .mobile-student-row,
+        .mobile-student-side,
+        .mobile-quick-actions {
+            display: flex;
+            align-items: center;
+        }
+
+        .mobile-student-row {
+            gap: 10px;
+        }
+
+        .mobile-student-main {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .mobile-student-title {
+            display: flex;
+            align-items: baseline;
+            gap: 5px;
+            min-width: 0;
+        }
+
+        .student-index {
+            color: var(--muted);
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .mobile-student-title .student-name {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .mobile-student-mini {
+            display: block;
+            margin-top: 3px;
+            color: var(--muted);
+            font-size: .8rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .mobile-student-side {
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .mobile-quick-actions {
+            gap: 5px;
         }
 
         /* ========================
@@ -1442,23 +1585,13 @@
             }
 
             .student-card:hover { box-shadow: none; }
-            .card-head {
-                padding-bottom: 8px;
-                margin-bottom: 8px;
-            }
+            .mobile-student-row { align-items: flex-start; }
+            .mobile-student-side .badge { font-size: .72rem; }
+            .mobile-student-side .data-status-badge { max-width: 118px; }
             .student-name { font-size: .98rem; line-height: 1.35; }
             .student-meta { font-size: .76rem; }
-            .card-meta { gap: 7px; font-size: .84rem; }
-            .card-meta-row { gap: 7px; }
-            .card-actions {
-                gap: 6px;
-                margin-top: 10px;
-                padding-top: 10px;
-            }
-            .card-act-btn {
-                height: 42px;
-                font-size: .8rem;
-            }
+            .mobile-student-mini { font-size: .78rem; }
+            .mobile-quick-actions .btn-icon { width: 34px; height: 34px; }
 
             .class-card-header {
                 margin-bottom: 8px;
@@ -2480,6 +2613,12 @@
         "contact", "fatherName", "motherName",
         "currentVillage", "currentCommune", "currentDistrict", "currentProvince", "gpa"
     ];
+    const STUDENT_DATA_FIELDS = [
+        "studentName", "gender", "dob", "className", "fromSchool",
+        "pobVillage", "pobCommune", "pobDistrict", "pobProvince",
+        "contact", "fatherName", "motherName",
+        "currentVillage", "currentCommune", "currentDistrict", "currentProvince", "gpa"
+    ];
     const STUDENT_TEMPLATE_EXAMPLE = [
         "", "(ឧ.) ហ៊ុន ណារ", "ប្រុស", "15/05/2010", "7A", "សាលាបឋមសិក្សាព្រៃខ្លា",
         "ព្រៃមេលងខាងជើង", "ព្រៃខ្លា", "ស្រុកកោះអណ្តែត", "ខេត្តតាកែវ",
@@ -2566,6 +2705,49 @@
             s.contact, s.fatherName, s.motherName,
             s.currentVillage, s.currentCommune, s.currentDistrict, s.currentProvince, s.gpa
         ];
+    }
+
+    function hasStudentDataValue(v) {
+        return String(v ?? "").trim() !== "";
+    }
+
+    function getStudentDataStatus(s = {}) {
+        const filled = STUDENT_DATA_FIELDS.filter(field => hasStudentDataValue(s[field])).length;
+        const total = STUDENT_DATA_FIELDS.length;
+        const missing = total - filled;
+        if (filled <= 1) {
+            return {
+                level: "empty",
+                rowClass: "student-data-empty",
+                label: "គ្មានទិន្នន័យ",
+                icon: "alert-circle-outline",
+                title: `គ្មានព័ត៌មានលម្អិត (${filled}/${total})`
+            };
+        }
+        if (missing > 0) {
+            return {
+                level: "partial",
+                rowClass: "student-data-partial",
+                label: `ខ្វះ ${missing}`,
+                icon: "warning-outline",
+                title: `មានទិន្នន័យខ្លះៗ (${filled}/${total})`
+            };
+        }
+        return {
+            level: "complete",
+            rowClass: "student-data-complete",
+            label: "ពេញលេញ",
+            icon: "checkmark-circle-outline",
+            title: `ទិន្នន័យពេញលេញ (${filled}/${total})`
+        };
+    }
+
+    function dataStatusBadge(status) {
+        return `
+            <span class="data-status-badge status-${esc(status.level)}" title="${esc(status.title)}">
+                <ion-icon name="${esc(status.icon)}" aria-hidden="true"></ion-icon>
+                <span>${esc(status.label)}</span>
+            </span>`;
     }
 
     function formatDateTime(v) {
@@ -3566,11 +3748,19 @@
         els.studentList.innerHTML = groupedByClass(visibleStudents).map(([cls, students]) => {
             const rows = students.map(s => {
                 rowNum++;
+                const status = getStudentDataStatus(s);
                 return `
-                    <tr>
+                    <tr class="${esc(status.rowClass)}" title="${esc(status.title)}">
                         <td class="muted" style="font-size:.8rem; text-align:center;">${rowNum}</td>
                         <td style="font-family: monospace; font-size:.82rem;">${esc(studentVisibleId(s)||"–")}</td>
-                        <td style="font-weight:600; color:var(--text);">${esc(s.studentName)}</td>
+                        <td>
+                            <div class="table-student-name">
+                                <button class="student-name-button edit-btn" type="button" data-id="${esc(s.id)}" title="កែព័ត៌មាន ${esc(s.studentName)}">
+                                    <span class="student-name">${esc(s.studentName)}</span>
+                                </button>
+                                ${dataStatusBadge(status)}
+                            </div>
+                        </td>
                         <td style="text-align:center;">${genderBadge(s.gender||"")}</td>
                         <td style="text-align:center; font-size:.82rem;">${esc(formatDate(s.dob)||"–")}</td>
                         <td style="text-align:center;">${esc(s.className||"–")}</td>
@@ -3612,35 +3802,34 @@
         const cardGroups = groupedByClass(visibleStudents).map(([cls, students]) => {
             const cards = students.map(s => {
                 cardNum++;
+                const status = getStudentDataStatus(s);
+                const miniInfo = [
+                    s.className ? `ថ្នាក់ ${s.className}` : "មិនទាន់មានថ្នាក់",
+                    s.contact ? `ទូរស័ព្ទ ${s.contact}` : "ខ្វះលេខទូរស័ព្ទ"
+                ].join(" · ");
                 return `
-                    <article class="student-card">
-                        <div class="card-head">
-                            <div>
-                                <div class="student-name">${cardNum}. ${esc(s.studentName)}</div>
-                                <div class="student-meta">${esc(studentVisibleId(s)||"–")} · ${esc(formatDate(s.dob)||"–")}</div>
+                    <article class="student-card ${esc(status.rowClass)}" title="${esc(status.title)}">
+                        <div class="mobile-student-row">
+                            <button class="student-name-button mobile-student-main edit-btn" type="button" data-id="${esc(s.id)}" aria-label="កែព័ត៌មាន ${esc(s.studentName)}">
+                                <span class="mobile-student-title">
+                                    <span class="student-index">${cardNum}.</span>
+                                    <span class="student-name">${esc(s.studentName)}</span>
+                                </span>
+                                <span class="student-meta">${esc(studentVisibleId(s)||"–")} · ${esc(formatDate(s.dob)||"–")}</span>
+                                <span class="mobile-student-mini">${esc(miniInfo)}</span>
+                            </button>
+                            <div class="mobile-student-side">
+                                ${dataStatusBadge(status)}
+                                ${genderBadge(s.gender||"")}
+                                <div class="mobile-quick-actions" aria-label="សកម្មភាពសិស្ស">
+                                    <button class="btn btn-icon print-student-btn" type="button" title="Print" data-id="${esc(s.id)}">
+                                        <ion-icon name="print-outline" aria-hidden="true"></ion-icon>
+                                    </button>
+                                    <button class="btn btn-icon delete-btn" type="button" title="លុប" data-id="${esc(s.id)}" style="color:var(--red)">
+                                        <ion-icon name="trash-outline" aria-hidden="true"></ion-icon>
+                                    </button>
+                                </div>
                             </div>
-                            ${genderBadge(s.gender||"")}
-                        </div>
-                        <div class="card-meta">
-                            <div>ថ្នាក់: ${esc(s.className||"–")}</div>
-                            <div>សាលា: ${esc(s.fromSchool||"–")}</div>
-                            <div>ទូរស័ព្ទ: ${esc(s.contact||"–")}</div>
-                            <div>ឈ្មោះឪពុក: ${esc(s.fatherName||"–")}</div>
-                            <div>ឈ្មោះម្តាយ: ${esc(s.motherName||"–")}</div>
-                            <div>ទីកន្លែងកំណើត: ${esc(addressText(s,"pob")||"–")}</div>
-                            <div>អាសយដ្ឋានបច្ចុប្បន្ន: ${esc(addressText(s,"current")||"–")}</div>
-                            <div>មធ្យមភាគ: ${esc(s.gpa||"–")}</div>
-                        </div>
-                        <div class="row-actions" style="opacity:1;margin-top:10px;justify-content:flex-start">
-                            <button class="btn btn-ghost btn-sm print-student-btn" type="button" data-id="${esc(s.id)}">
-                                <ion-icon name="print-outline"></ion-icon> Print
-                            </button>
-                            <button class="btn btn-secondary btn-sm edit-btn" type="button" data-id="${esc(s.id)}">
-                                <ion-icon name="create-outline"></ion-icon> កែ
-                            </button>
-                            <button class="btn btn-sm delete-btn" type="button" data-id="${esc(s.id)}" style="background:var(--red-soft);color:var(--red)">
-                                <ion-icon name="trash-outline"></ion-icon> លុប
-                            </button>
                         </div>
                     </article>`;
             }).join("");
