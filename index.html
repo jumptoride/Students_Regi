@@ -2548,6 +2548,7 @@
     const GOOGLE_SCRIPT_STORAGE_KEY  = "studentRegistrationGoogleScriptUrl";
     const BACKUP_TIME_STORAGE_KEY    = "studentRegistrationLastBackupAt";
     const STUDENT_CODE_PREFIX        = "STU";
+    const SUPABASE_READ_PAGE_SIZE    = 1000;
 
     const SUPABASE_FIELD_MAP = {
         id: "id",
@@ -3416,9 +3417,21 @@
         }
     }
 
+    async function readSupabaseRows(basePath, pageSize=SUPABASE_READ_PAGE_SIZE) {
+        const allRows = [];
+        for (let offset = 0; ; offset += pageSize) {
+            const separator = basePath.includes("?") ? "&" : "?";
+            const page = await supabaseFetch(`${basePath}${separator}limit=${pageSize}&offset=${offset}`);
+            if (!Array.isArray(page) || !page.length) break;
+            allRows.push(...page);
+            if (page.length < pageSize) break;
+        }
+        return allRows;
+    }
+
     async function readSupabaseStudents() {
-        const rows = await supabaseFetch("students?select=*&order=class_name.asc,student_name.asc");
-        return Array.isArray(rows) ? rows.map(normalizeSupabaseRow).filter(s => s.studentName) : [];
+        const rows = await readSupabaseRows("students?select=*&order=class_name.asc,student_name.asc");
+        return rows.map(normalizeSupabaseRow).filter(s => s.studentName);
     }
 
     async function syncSupabaseStorage(action, student={}, studentId="", students=null) {
@@ -3428,7 +3441,7 @@
             if (!rows.length) {
                 await supabaseFetch("students?id=not.is.null", { method:"DELETE", headers:{ "Prefer":"return=minimal" } });
             } else {
-                const existingRows = await supabaseFetch("students?select=id,student_code");
+                const existingRows = await readSupabaseRows("students?select=id,student_code");
                 const currentIds = new Set(rows.map(row => row.id).filter(Boolean));
                 const currentCodes = new Set(rows.map(row => row.student_code).filter(Boolean));
                 const conflictIds = (Array.isArray(existingRows) ? existingRows : [])
