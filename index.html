@@ -2572,6 +2572,7 @@
         createdAt: "created_at",
         updatedAt: "updated_at"
     };
+    const SUPABASE_OPTIONAL_COLUMNS = new Set(["photo"]);
 
     // ===================== LOCAL STORAGE DB HANDLERS =====================
     function loadFromLocalStorage() {
@@ -2872,6 +2873,8 @@
     let isLoadingPage = false;
     let studentToDeleteId = null;
     let lastCloudError = "";
+    let cloudSyncWarning = "";
+    const disabledSupabaseColumns = new Set();
 
     const fieldIds = [
         "studentCode","studentName","dob","fatherName","motherName",
@@ -3102,6 +3105,23 @@
         return text.replace(/\s+/g, " ").trim();
     }
 
+    function missingSupabaseColumnFromError(err) {
+        const text = readableCloudError(err).toLowerCase();
+        for (const column of SUPABASE_OPTIONAL_COLUMNS) {
+            const col = column.toLowerCase();
+            if (text.includes(col) && (text.includes("column") || text.includes("schema cache") || text.includes("does not exist"))) {
+                return column;
+            }
+        }
+        return "";
+    }
+
+    function removeDisabledSupabaseColumns(row={}) {
+        const cleaned = { ...row };
+        disabledSupabaseColumns.forEach(column => delete cleaned[column]);
+        return cleaned;
+    }
+
     function rememberSheetUrlFromQuery() {
         try {
             const params = new URLSearchParams(window.location.search);
@@ -3324,6 +3344,7 @@
         const normalized = normalizeCloudStudent({ ...student, id, studentCode: student.studentCode || student.studentId || "" });
         const row = {};
         Object.entries(SUPABASE_FIELD_MAP).forEach(([field, column]) => {
+            if (disabledSupabaseColumns.has(column)) return;
             row[column] = normalized[field] ?? "";
         });
         row.id = id;
@@ -3373,11 +3394,25 @@
 
     async function upsertSupabaseRows(rows=[]) {
         for (const chunk of splitSupabaseRows(rows)) {
-            await supabaseFetch("students?on_conflict=id", {
-                method:"POST",
-                headers:{ "Prefer":"resolution=merge-duplicates,return=minimal" },
-                body:JSON.stringify(chunk)
-            });
+            try {
+                await supabaseFetch("students?on_conflict=id", {
+                    method:"POST",
+                    headers:{ "Prefer":"resolution=merge-duplicates,return=minimal" },
+                    body:JSON.stringify(chunk.map(removeDisabledSupabaseColumns))
+                });
+            } catch(e) {
+                const missingColumn = missingSupabaseColumnFromError(e);
+                if (!missingColumn) throw e;
+                disabledSupabaseColumns.add(missingColumn);
+                if (missingColumn === "photo") {
+                    cloudSyncWarning = "Supabase table ខ្វះ column photo ដូច្នេះ Backup បានតែទិន្នន័យ; រូបថតមិនទាន់ sync";
+                }
+                await supabaseFetch("students?on_conflict=id", {
+                    method:"POST",
+                    headers:{ "Prefer":"resolution=merge-duplicates,return=minimal" },
+                    body:JSON.stringify(chunk.map(removeDisabledSupabaseColumns))
+                });
+            }
         }
     }
 
@@ -3408,11 +3443,7 @@
             }
         } else if (action === "upsert") {
             const row = supabaseStudentToDbRow(student, studentId);
-            await supabaseFetch("students?on_conflict=id", {
-                method:"POST",
-                headers:{ "Prefer":"resolution=merge-duplicates,return=minimal" },
-                body:JSON.stringify(row)
-            });
+            await upsertSupabaseRows([row]);
         } else if (action === "delete") {
             const key = encodeURIComponent(String(studentId || student.studentCode || student.id || "").trim());
             if (key) await supabaseFetch(`students?or=(id.eq.${key},student_code.eq.${key})`, { method:"DELETE", headers:{ "Prefer":"return=minimal" } });
@@ -3439,6 +3470,7 @@
 
     async function syncCloudStorage(action, student={}, studentId="", students=null) {
         lastCloudError = "";
+        cloudSyncWarning = "";
         try {
             if (getCloudProvider() === SUPABASE_PROVIDER) {
                 return await syncSupabaseStorage(action, student, studentId, students);
@@ -3455,6 +3487,8 @@
         const ok = await syncCloudStorage(action, student, studentId, students);
         if (!ok && hasCloudStorageConfig()) {
             showToast(`${currentStorageName()} sync មិនបាន${lastCloudError ? ": " + lastCloudError.slice(0, 70) : ""}`, "warning");
+        } else if (ok && cloudSyncWarning) {
+            showToast(cloudSyncWarning, "warning");
         }
         return ok;
     }
@@ -4716,14 +4750,14 @@
             if (!ok) throw new Error(`${currentStorageName()} backup failed`);
             localStorage.setItem(BACKUP_TIME_STORAGE_KEY, new Date().toISOString());
             await logHistory("backup", currentStorageName(), { total: allStudents.length });
-            showToast(`Backup ${allStudents.length} នាក់ ទៅ ${currentStorageName()}`);
+            showToast(cloudSyncWarning || `Backup ${allStudents.length} នាក់ ទៅ ${currentStorageName()}`, cloudSyncWarning ? "warning" : "success");
             setStatus(currentStorageName(), "connected");
         } catch(e) {
             console.error("Backup error:", e);
             const msg = lastCloudError || readableCloudError(e);
             showToast(`Backup មិនបាន${msg ? ": " + msg.slice(0, 90) : ""}`,"error");
         } finally {
-            setCloudControlsLoading(false);
+            setBackupLoading(false);
         }
     }
 
