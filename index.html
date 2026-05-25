@@ -2871,6 +2871,7 @@
     let hasNextPage = false;
     let isLoadingPage = false;
     let studentToDeleteId = null;
+    let lastCloudError = "";
 
     const fieldIds = [
         "studentCode","studentName","dob","fatherName","motherName",
@@ -3077,7 +3078,8 @@
 
     function getCloudProvider() {
         const saved = localStorage.getItem(CLOUD_PROVIDER_STORAGE_KEY);
-        if ([SUPABASE_PROVIDER, GOOGLE_SHEET_PROVIDER].includes(saved)) return saved;
+        if (saved === SUPABASE_PROVIDER && hasSupabaseConfig()) return SUPABASE_PROVIDER;
+        if (saved === GOOGLE_SHEET_PROVIDER && hasGoogleScriptUrl()) return GOOGLE_SHEET_PROVIDER;
         if (hasSupabaseConfig()) return SUPABASE_PROVIDER;
         if (hasGoogleScriptUrl()) return GOOGLE_SHEET_PROVIDER;
         return SUPABASE_PROVIDER;
@@ -3089,6 +3091,15 @@
 
     function hasCloudStorageConfig() {
         return getCloudProvider() === SUPABASE_PROVIDER ? hasSupabaseConfig() : hasGoogleScriptUrl();
+    }
+
+    function readableCloudError(err) {
+        let text = err?.message || String(err || "");
+        try {
+            const parsed = JSON.parse(text);
+            text = parsed.message || parsed.error || text;
+        } catch {}
+        return text.replace(/\s+/g, " ").trim();
     }
 
     function rememberSheetUrlFromQuery() {
@@ -3269,6 +3280,7 @@
     async function testCloudStorageConnection() {
         const provider = els.storageProviderSelect.value;
         setStorageTestLoading(true);
+        lastCloudError = "";
         try {
             const result = provider === SUPABASE_PROVIDER
                 ? await testSupabaseDraftConnection(normalizeSupabaseUrl(els.supabaseUrlInput.value), els.supabaseKeyInput.value.trim())
@@ -3277,7 +3289,8 @@
             setStatus(result.ok ? (provider === SUPABASE_PROVIDER ? "Supabase" : "Google Sheet") : "Storage មិនទាន់រួច", result.ok ? "connected" : "error");
         } catch(e) {
             console.error("Storage test error:", e);
-            showToast("តេស្តភ្ជាប់មិនបាន", "error");
+            lastCloudError = readableCloudError(e);
+            showToast(`តេស្តភ្ជាប់មិនបាន${lastCloudError ? ": " + lastCloudError.slice(0, 90) : ""}`, "error");
             setStatus("Storage មិនបានភ្ជាប់", "error");
         } finally {
             setStorageTestLoading(false);
@@ -3328,6 +3341,46 @@
         return normalizeCloudStudent(student, idx);
     }
 
+    function splitSupabaseRows(rows) {
+        const encoder = new TextEncoder();
+        const maxRows = 20;
+        const maxBytes = 650000;
+        const chunks = [];
+        let chunk = [];
+        let bytes = 2;
+        rows.forEach(row => {
+            const rowBytes = encoder.encode(JSON.stringify(row)).length + 1;
+            if (chunk.length && (chunk.length >= maxRows || bytes + rowBytes > maxBytes)) {
+                chunks.push(chunk);
+                chunk = [];
+                bytes = 2;
+            }
+            chunk.push(row);
+            bytes += rowBytes;
+        });
+        if (chunk.length) chunks.push(chunk);
+        return chunks;
+    }
+
+    async function deleteSupabaseRowsById(ids=[]) {
+        for (const id of ids.filter(Boolean)) {
+            await supabaseFetch(`students?id=eq.${encodeURIComponent(String(id))}`, {
+                method:"DELETE",
+                headers:{ "Prefer":"return=minimal" }
+            });
+        }
+    }
+
+    async function upsertSupabaseRows(rows=[]) {
+        for (const chunk of splitSupabaseRows(rows)) {
+            await supabaseFetch("students?on_conflict=id", {
+                method:"POST",
+                headers:{ "Prefer":"resolution=merge-duplicates,return=minimal" },
+                body:JSON.stringify(chunk)
+            });
+        }
+    }
+
     async function readSupabaseStudents() {
         const rows = await supabaseFetch("students?select=*&order=class_name.asc,student_name.asc");
         return Array.isArray(rows) ? rows.map(normalizeSupabaseRow).filter(s => s.studentName) : [];
@@ -3336,10 +3389,22 @@
     async function syncSupabaseStorage(action, student={}, studentId="", students=null) {
         if (!hasSupabaseConfig()) return false;
         if (action === "backup") {
-            await supabaseFetch("students?id=not.is.null", { method:"DELETE", headers:{ "Prefer":"return=minimal" } });
             const rows = Array.isArray(students) ? students.map(s => supabaseStudentToDbRow(s, studentDisplayId(s, s.id))) : [];
-            if (rows.length) {
-                await supabaseFetch("students", { method:"POST", headers:{ "Prefer":"return=minimal" }, body:JSON.stringify(rows) });
+            if (!rows.length) {
+                await supabaseFetch("students?id=not.is.null", { method:"DELETE", headers:{ "Prefer":"return=minimal" } });
+            } else {
+                const existingRows = await supabaseFetch("students?select=id,student_code");
+                const currentIds = new Set(rows.map(row => row.id).filter(Boolean));
+                const currentCodes = new Set(rows.map(row => row.student_code).filter(Boolean));
+                const conflictIds = (Array.isArray(existingRows) ? existingRows : [])
+                    .filter(row => row.id && row.student_code && currentCodes.has(row.student_code) && !currentIds.has(row.id))
+                    .map(row => row.id);
+                await deleteSupabaseRowsById(conflictIds);
+                await upsertSupabaseRows(rows);
+                const staleIds = (Array.isArray(existingRows) ? existingRows : [])
+                    .filter(row => row.id && !currentIds.has(row.id) && !conflictIds.includes(row.id))
+                    .map(row => row.id);
+                await deleteSupabaseRowsById(staleIds);
             }
         } else if (action === "upsert") {
             const row = supabaseStudentToDbRow(student, studentId);
@@ -3373,6 +3438,7 @@
     }
 
     async function syncCloudStorage(action, student={}, studentId="", students=null) {
+        lastCloudError = "";
         try {
             if (getCloudProvider() === SUPABASE_PROVIDER) {
                 return await syncSupabaseStorage(action, student, studentId, students);
@@ -3380,8 +3446,17 @@
             return await syncGoogleSheet(action, student, studentId, students);
         } catch(e) {
             console.error(`${currentStorageName()} sync error:`, e);
+            lastCloudError = readableCloudError(e);
             return false;
         }
+    }
+
+    async function syncCloudStorageWithToast(action, student={}, studentId="", students=null) {
+        const ok = await syncCloudStorage(action, student, studentId, students);
+        if (!ok && hasCloudStorageConfig()) {
+            showToast(`${currentStorageName()} sync មិនបាន${lastCloudError ? ": " + lastCloudError.slice(0, 70) : ""}`, "warning");
+        }
+        return ok;
     }
 
     function readGoogleSheetJsonp(params={}) {
@@ -3463,8 +3538,9 @@
             return true;
         } catch(e) {
             console.error("Supabase load error:", e);
+            lastCloudError = readableCloudError(e);
             setStatus("Supabase មិនបានភ្ជាប់", "error");
-            if (!silent) showToast("Load ពី Supabase មិនបាន","error");
+            if (!silent) showToast(`Load ពី Supabase មិនបាន${lastCloudError ? ": " + lastCloudError.slice(0, 90) : ""}`,"error");
             return false;
         } finally {
             setCloudControlsLoading(false);
@@ -3499,8 +3575,9 @@
             return true;
         } catch(e) {
             console.error("Google Sheet load error:", e);
+            lastCloudError = readableCloudError(e);
             setStatus("Sheet មិនបានភ្ជាប់", "error");
-            if (!silent) showToast("Load ពី Google Sheet មិនបាន","error");
+            if (!silent) showToast(`Load ពី Google Sheet មិនបាន${lastCloudError ? ": " + lastCloudError.slice(0, 90) : ""}`,"error");
             return false;
         } finally {
             setCloudControlsLoading(false);
@@ -4195,7 +4272,7 @@
                 }
                 saveToLocalStorage(allStudents);
                 await logHistory("edited", payload.studentName, { studentId: payload.studentCode, recordId: editingId });
-                await syncCloudStorage("upsert", {...payload, recordId: editingId}, payload.studentCode||editingId);
+                await syncCloudStorageWithToast("upsert", {...payload, recordId: editingId}, payload.studentCode||editingId);
                 showToast("បានកែសម្រួលព័ត៌មានសិស្ស");
             } else {
                 payload.studentCode = await generateStudentCode();
@@ -4210,7 +4287,7 @@
                 allStudents.unshift(newStudent);
                 saveToLocalStorage(allStudents);
                 await logHistory("added", payload.studentName, { studentId: payload.studentCode, recordId: newId, ...payload });
-                await syncCloudStorage("upsert", {...payload, recordId: newId}, payload.studentCode);
+                await syncCloudStorageWithToast("upsert", {...payload, recordId: newId}, payload.studentCode);
                 showToast(`បានបន្ថែម ${payload.studentName} (${payload.studentCode})`);
             }
             resetForm();
@@ -4243,7 +4320,7 @@
             allStudents = allStudents.filter(i => i.id !== studentToDeleteId);
             saveToLocalStorage(allStudents);
             await logHistory("deleted", name, { studentId: studentDisplayId(s, studentToDeleteId), recordId: studentToDeleteId });
-            await syncCloudStorage("delete", s||{studentName:name}, studentDisplayId(s, studentToDeleteId));
+            await syncCloudStorageWithToast("delete", s||{studentName:name}, studentDisplayId(s, studentToDeleteId));
             closeDeleteModal();
             showToast("បានលុបសិស្ស");
             if (els.editingId.value === studentToDeleteId) resetForm();
@@ -4282,7 +4359,7 @@
             allStudents = [];
             saveToLocalStorage(allStudents);
             await logHistory("cleared", "ទិន្នន័យសិស្សទាំងអស់", { total: count });
-            await syncCloudStorage("backup", {}, "", []);
+            await syncCloudStorageWithToast("backup", {}, "", []);
             closeDeleteAllModal();
             resetForm();
             await refreshStudents({ reset: true, source:"memory" });
@@ -4643,7 +4720,8 @@
             setStatus(currentStorageName(), "connected");
         } catch(e) {
             console.error("Backup error:", e);
-            showToast("Backup មិនបាន","error");
+            const msg = lastCloudError || readableCloudError(e);
+            showToast(`Backup មិនបាន${msg ? ": " + msg.slice(0, 90) : ""}`,"error");
         } finally {
             setCloudControlsLoading(false);
         }
@@ -5078,7 +5156,7 @@
             allStudents=[...saved,...allStudents];
             saveToLocalStorage(allStudents);
             await logHistory("imported",label,{total:saved.length,skipped:skipped.length});
-            await syncCloudStorage("backup",{},"",allStudents);
+            await syncCloudStorageWithToast("backup",{},"",allStudents);
         }
         return{accepted:saved,skipped};
     }
