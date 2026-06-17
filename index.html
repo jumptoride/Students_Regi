@@ -4782,7 +4782,7 @@
         win.document.write(`
             <!DOCTYPE html><html lang="km"><head>
             <meta charset="UTF-8"><title>${esc(title)}</title>
-            <link href="https://fonts.googleapis.com/css2?family=Kantumruy:wght@400;600;700&display=swap" rel="stylesheet">
+            <link href="https://fonts.googleapis.com/css2?family=Kantumruy:wght@400;600;700&family=Moul&display=swap" rel="stylesheet">
             <style>
                 @page { size: A4; margin: 14mm; }
                 * { box-sizing: border-box; }
@@ -5033,7 +5033,7 @@
                     <div class="field label">លេខទំនាក់ទំនង</div>
                     <div class="field value">${esc(s.contact || "")}</div>
                     <div class="field label">ឪពុក/ម្តាយ</div>
-                    <div class="field value center">${esc([s.fatherName, s.motherName].filter(Boolean).join(" / ") || "")}</div>
+                    <div class="field value wide">${esc([s.fatherName, s.motherName].filter(Boolean).join(" / ") || "")}</div>
                 </section>
                 <section class="card-lower">
                     <div class="card-photo-box">
@@ -5060,55 +5060,78 @@
                 body { background:#fff; color:#0f172a; }
                 .cards-grid { display:grid; grid-template-columns:repeat(3, 94mm); gap:3mm; justify-content:center; align-items:start; }
                 .certificate-student-card {
+                    --card-muol:"Khmer OS Muol Light","KhmerOSMuolLight","KhmerOSMoulLight","Moul","Khmer OS",serif;
+                    --card-body:"Kantumruy","Khmer OS",Arial,sans-serif;
                     position:relative;
                     width:94mm;
                     height:118mm;
                     overflow:hidden;
                     break-inside:avoid;
                     page-break-inside:avoid;
-                    border:1.2px solid #2f72ff;
-                    background:#fff;
-                    padding:3.8mm 4mm 3mm;
-                    font-family:"Kantumruy","Khmer OS",Arial,sans-serif;
+                    border:1.15px solid #2368f7;
+                    box-shadow:inset 0 0 0 .45mm rgba(35,104,247,.12);
+                    background:linear-gradient(180deg, #fff 0%, #fff 73%, #f8fbff 100%);
+                    padding:3.4mm 3.8mm 3.2mm;
+                    font-family:var(--card-muol);
+                    font-weight:400;
                     letter-spacing:0;
+                    print-color-adjust:exact;
+                    -webkit-print-color-adjust:exact;
                 }
                 .certificate-student-card * { position:relative; z-index:1; }
-                .card-watermark { position:absolute; inset:18mm 10mm auto; z-index:0; display:grid; place-items:center; opacity:.12; }
+                .card-watermark { position:absolute; inset:19mm 10mm auto; z-index:0; display:grid; place-items:center; opacity:.095; }
                 .card-watermark img { width:70mm; height:76mm; object-fit:contain; display:block; }
-                .card-heading { display:grid; grid-template-columns:23mm 1fr; min-height:17mm; align-items:start; }
-                .card-logo { display:flex; justify-content:center; align-items:flex-start; padding-top:1mm; }
-                .card-logo img { width:13mm; height:16mm; object-fit:contain; display:block; filter:drop-shadow(0 1px 0 rgba(255,255,255,.65)); }
-                .card-kingdom { text-align:right; color:#123344; font-size:10px; line-height:1.5; font-weight:700; }
-                .kingdom-line { width:34mm; height:1.6mm; margin:1mm 0 0 auto; border-top:1px solid #436176; border-bottom:1px solid #436176; opacity:.65; }
-                .card-ministry { margin-top:-2.5mm; color:#153847; font-size:10.2px; line-height:1.72; font-weight:700; text-shadow:0 .25px 0 #fff; }
-                .card-title { margin-top:1.4mm; text-align:center; color:#cf6f00; font-size:12px; line-height:1.25; font-weight:700; }
-                .card-year { margin-top:.4mm; text-align:center; color:#3b82f6; font-size:12px; line-height:1.2; font-weight:700; }
+                .card-heading { display:grid; grid-template-columns:20mm 1fr; min-height:17mm; align-items:start; column-gap:2mm; }
+                .card-logo { display:flex; justify-content:center; align-items:flex-start; padding-top:.4mm; }
+                .card-logo img { width:14mm; height:17mm; object-fit:contain; display:block; filter:drop-shadow(0 1px 0 rgba(255,255,255,.65)); }
+                .card-kingdom { text-align:right; color:#123344; font-size:9.2px; line-height:1.55; font-family:var(--card-muol); font-weight:400; }
+                .kingdom-line { width:32mm; height:1.5mm; margin:.8mm 0 0 auto; border-top:1px solid #48647a; border-bottom:1px solid #48647a; opacity:.65; }
+                .card-ministry { width:62mm; margin-top:-3mm; color:#153847; font-size:8.9px; line-height:1.72; font-family:var(--card-muol); font-weight:400; text-shadow:0 .25px 0 #fff; }
+                .card-title { margin-top:1.2mm; text-align:center; color:#c66a00; font-size:10.2px; line-height:1.35; font-family:var(--card-muol); font-weight:400; }
+                .card-year { margin-top:.2mm; text-align:center; color:#3b82f6; font-size:10.1px; line-height:1.35; font-family:var(--card-muol); font-weight:400; }
                 .card-fields {
                     display:grid;
-                    grid-template-columns:25mm 31mm 10mm 15mm;
-                    column-gap:1.5mm;
-                    row-gap:1.4mm;
-                    margin-top:4.8mm;
-                    align-items:center;
-                    font-size:9.2px;
+                    grid-template-columns:24mm 31mm 10mm 18mm;
+                    column-gap:1.2mm;
+                    row-gap:1.25mm;
+                    margin-top:3.5mm;
+                    padding:1.8mm 1.8mm 1.4mm;
+                    align-items:end;
+                    border-top:1px solid rgba(35,104,247,.28);
+                    border-bottom:1px solid rgba(35,104,247,.28);
+                    background:rgba(255,255,255,.56);
+                    font-size:7.7px;
                     line-height:1.35;
                 }
-                .field.label { color:#1f2937; white-space:nowrap; }
-                .field.value { min-width:0; color:#001eff; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-                .field.value.center { text-align:center; }
+                .field.label { color:#1f2937; white-space:nowrap; font-family:var(--card-muol); font-weight:400; }
+                .field.value {
+                    min-width:0;
+                    min-height:4.1mm;
+                    display:flex;
+                    align-items:flex-end;
+                    color:#001eff;
+                    border-bottom:1px dotted rgba(55,65,81,.78);
+                    padding:0 .8mm .35mm;
+                    font-family:var(--card-muol);
+                    font-weight:400;
+                    white-space:nowrap;
+                    overflow:hidden;
+                    text-overflow:ellipsis;
+                }
+                .field.value.center { justify-content:center; text-align:center; }
                 .field.value.wide { grid-column:span 3; }
-                .student-name-value { font-size:9.4px; }
-                .card-lower { display:grid; grid-template-columns:26mm 1fr; gap:2.5mm; margin-top:2.2mm; align-items:start; }
-                .card-photo-box { width:25mm; height:41mm; border:1.2px solid #2f72ff; background:rgba(255,255,255,.62); }
-                .card-id-code { height:7mm; display:grid; place-items:center; border-bottom:1.1px solid #2f72ff; color:#111827; font-size:9px; line-height:1; font-weight:700; white-space:nowrap; overflow:hidden; }
-                .card-photo-slot { height:34mm; display:grid; place-items:center; overflow:hidden; color:#9ca3af; font-size:9px; font-weight:700; }
+                .student-name-value { font-size:7.9px; }
+                .card-lower { display:grid; grid-template-columns:27mm 1fr; gap:3mm; margin-top:2.5mm; align-items:start; }
+                .card-photo-box { width:26mm; height:42mm; border:1.2px solid #2368f7; background:rgba(255,255,255,.68); }
+                .card-id-code { height:7mm; display:grid; place-items:center; border-bottom:1.1px solid #2368f7; color:#111827; font-size:7.6px; line-height:1; font-family:var(--card-muol); font-weight:400; white-space:nowrap; overflow:hidden; }
+                .card-photo-slot { height:35mm; display:grid; place-items:center; overflow:hidden; color:#9ca3af; font-size:8px; font-family:var(--card-muol); font-weight:400; }
                 .card-photo-slot img { width:100%; height:100%; object-fit:cover; display:block; }
-                .card-signature { min-width:0; padding-top:1mm; font-size:8.8px; line-height:1.45; color:#111827; }
-                .signature-row { display:grid; grid-template-columns:20mm 1fr; gap:1mm; margin-bottom:1.1mm; align-items:end; }
-                .signature-row strong { min-width:0; color:#001eff; border-bottom:1px dotted #374151; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-                .signature-lines { display:grid; gap:1.6mm; margin-top:2mm; color:#111827; }
-                .signature-lines span { border-bottom:1px dotted #374151; text-align:right; white-space:nowrap; }
-                .principal-title { margin-top:3.4mm; text-align:center; color:#0f3b46; font-size:11px; font-weight:700; }
+                .card-signature { min-width:0; padding-top:.6mm; font-size:7.1px; line-height:1.55; color:#111827; font-family:var(--card-muol); font-weight:400; }
+                .signature-row { display:grid; grid-template-columns:17mm 1fr; gap:1.2mm; margin-bottom:1.2mm; align-items:end; }
+                .signature-row strong { min-width:0; color:#001eff; border-bottom:1px dotted #374151; padding:0 .6mm .35mm; font-weight:400; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+                .signature-lines { display:grid; gap:1.7mm; margin-top:2.1mm; color:#111827; }
+                .signature-lines span { border-bottom:1px dotted #374151; text-align:right; white-space:nowrap; padding-bottom:.3mm; }
+                .principal-title { margin-top:3.2mm; text-align:center; color:#0f3b46; font-size:9px; line-height:1.45; font-family:var(--card-muol); font-weight:400; }
                 @media print {
                     body { background:#fff; }
                     .cards-grid { gap:3mm; }
