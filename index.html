@@ -4983,15 +4983,12 @@
         return `${toKhmerDigits(start)}-${toKhmerDigits(start + 1)}`;
     }
 
-    function studentCardEmblemSvg(className = "") {
-        return `<svg class="${esc(className)}" viewBox="0 0 120 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path d="M60 6 73 35 104 38 80 59 88 91 60 74 32 91 40 59 16 38 47 35Z" fill="#f59e0b" stroke="#ef4444" stroke-width="3"/>
-            <path d="M60 17 68 39 91 41 73 56 79 80 60 67 41 80 47 56 29 41 52 39Z" fill="#2563eb" stroke="#facc15" stroke-width="3"/>
-            <path d="M60 29v56" stroke="#fef3c7" stroke-width="6" stroke-linecap="round"/>
-            <path d="M43 90c10 7 24 7 34 0v28H43Z" fill="#f97316" stroke="#dc2626" stroke-width="3"/>
-            <path d="M28 60c-17 18-16 52 5 73M92 60c17 18 16 52-5 73" fill="none" stroke="#facc15" stroke-width="7" stroke-linecap="round"/>
-            <path d="M33 132h54M39 142h42" stroke="#1d4ed8" stroke-width="6" stroke-linecap="round"/>
-        </svg>`;
+    function studentCardLogoSrc() {
+        try {
+            return new URL("assets/moeys-logo.png", window.location.href).href;
+        } catch {
+            return "assets/moeys-logo.png";
+        }
     }
 
     function printStudentCards(students = null) {
@@ -4999,15 +4996,16 @@
         if (!rows.length) { showToast("មិនមានទិន្នន័យសម្រាប់បោះពុម្ពកាត","warning"); return; }
         const academicYear = studentCardAcademicYear();
         const issuedDate = new Date().toLocaleDateString("km-KH");
+        const logoSrc = studentCardLogoSrc();
         const cards = rows.map((s, index) => {
             const photoSrc = safePhotoSrc(s.photo);
             const visibleId = studentVisibleId(s) || `ID-${String(index + 1).padStart(4, "0")}`;
             const birthPlace = addressText(s, "pob") || "................................";
             const currentAddress = addressText(s, "current") || "................................";
             return `<article class="certificate-student-card">
-                <div class="card-watermark">${studentCardEmblemSvg("card-watermark-svg")}</div>
+                <div class="card-watermark"><img src="${esc(logoSrc)}" alt=""></div>
                 <header class="card-heading">
-                    <div class="card-logo">${studentCardEmblemSvg("card-logo-svg")}</div>
+                    <div class="card-logo"><img src="${esc(logoSrc)}" alt="ក្រសួងអប់រំ យុវជន និងកីឡា"></div>
                     <div class="card-kingdom">
                         <div>ព្រះរាជាណាចក្រកម្ពុជា</div>
                         <div>ជាតិ សាសនា ព្រះមហាក្សត្រ</div>
@@ -5075,11 +5073,11 @@
                     letter-spacing:0;
                 }
                 .certificate-student-card * { position:relative; z-index:1; }
-                .card-watermark { position:absolute; inset:19mm 12mm auto; z-index:0; display:grid; place-items:center; opacity:.12; }
-                .card-watermark-svg { width:68mm; height:72mm; }
+                .card-watermark { position:absolute; inset:18mm 10mm auto; z-index:0; display:grid; place-items:center; opacity:.12; }
+                .card-watermark img { width:70mm; height:76mm; object-fit:contain; display:block; }
                 .card-heading { display:grid; grid-template-columns:23mm 1fr; min-height:17mm; align-items:start; }
                 .card-logo { display:flex; justify-content:center; align-items:flex-start; padding-top:1mm; }
-                .card-logo-svg { width:13mm; height:16mm; filter:drop-shadow(0 1px 0 rgba(255,255,255,.65)); }
+                .card-logo img { width:13mm; height:16mm; object-fit:contain; display:block; filter:drop-shadow(0 1px 0 rgba(255,255,255,.65)); }
                 .card-kingdom { text-align:right; color:#123344; font-size:10px; line-height:1.5; font-weight:700; }
                 .kingdom-line { width:34mm; height:1.6mm; margin:1mm 0 0 auto; border-top:1px solid #436176; border-bottom:1px solid #436176; opacity:.65; }
                 .card-ministry { margin-top:-2.5mm; color:#153847; font-size:10.2px; line-height:1.72; font-weight:700; text-shadow:0 .25px 0 #fff; }
