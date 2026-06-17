@@ -4971,50 +4971,151 @@
             ${body}`);
     }
 
+    function toKhmerDigits(v) {
+        const nums = "០១២៣៤៥៦៧៨៩";
+        return String(v ?? "").replace(/\d/g, d => nums[Number(d)] || d);
+    }
+
+    function studentCardAcademicYear() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const start = now.getMonth() >= 8 ? year : year - 1;
+        return `${toKhmerDigits(start)}-${toKhmerDigits(start + 1)}`;
+    }
+
+    function studentCardEmblemSvg(className = "") {
+        return `<svg class="${esc(className)}" viewBox="0 0 120 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M60 6 73 35 104 38 80 59 88 91 60 74 32 91 40 59 16 38 47 35Z" fill="#f59e0b" stroke="#ef4444" stroke-width="3"/>
+            <path d="M60 17 68 39 91 41 73 56 79 80 60 67 41 80 47 56 29 41 52 39Z" fill="#2563eb" stroke="#facc15" stroke-width="3"/>
+            <path d="M60 29v56" stroke="#fef3c7" stroke-width="6" stroke-linecap="round"/>
+            <path d="M43 90c10 7 24 7 34 0v28H43Z" fill="#f97316" stroke="#dc2626" stroke-width="3"/>
+            <path d="M28 60c-17 18-16 52 5 73M92 60c17 18 16 52-5 73" fill="none" stroke="#facc15" stroke-width="7" stroke-linecap="round"/>
+            <path d="M33 132h54M39 142h42" stroke="#1d4ed8" stroke-width="6" stroke-linecap="round"/>
+        </svg>`;
+    }
+
     function printStudentCards(students = null) {
         const rows = students || printableRows();
         if (!rows.length) { showToast("មិនមានទិន្នន័យសម្រាប់បោះពុម្ពកាត","warning"); return; }
-        const cards = rows.map(s => {
+        const academicYear = studentCardAcademicYear();
+        const issuedDate = new Date().toLocaleDateString("km-KH");
+        const cards = rows.map((s, index) => {
             const photoSrc = safePhotoSrc(s.photo);
-            return `<article class="id-card">
-                <div class="id-card-top">
-                    <div class="school">វិទ្យាល័យសុខអានព្រៃមេលង</div>
-                    <div class="type">កាតសិស្ស</div>
-                </div>
-                <div class="id-card-body">
-                    <div class="id-photo">${photoSrc ? `<img src="${esc(photoSrc)}" alt="រូបថត">` : `<span class="id-photo-empty">រូបថត</span>`}</div>
-                    <div class="id-info">
-                        <div class="id-name">${esc(s.studentName||"")}</div>
-                        <div><span>អត្តលេខ</span>${esc(studentVisibleId(s)||"")}</div>
-                        <div><span>ថ្នាក់</span>${esc(s.className||"")}</div>
-                        <div><span>ភេទ</span>${esc(s.gender||"")}</div>
-                        <div><span>ថ្ងៃកំណើត</span>${esc(formatDate(s.dob)||"")}</div>
-                        <div><span>ទូរស័ព្ទ</span>${esc(s.contact||"")}</div>
+            const visibleId = studentVisibleId(s) || `ID-${String(index + 1).padStart(4, "0")}`;
+            const birthPlace = addressText(s, "pob") || "................................";
+            const currentAddress = addressText(s, "current") || "................................";
+            return `<article class="certificate-student-card">
+                <div class="card-watermark">${studentCardEmblemSvg("card-watermark-svg")}</div>
+                <header class="card-heading">
+                    <div class="card-logo">${studentCardEmblemSvg("card-logo-svg")}</div>
+                    <div class="card-kingdom">
+                        <div>ព្រះរាជាណាចក្រកម្ពុជា</div>
+                        <div>ជាតិ សាសនា ព្រះមហាក្សត្រ</div>
+                        <div class="kingdom-line"></div>
                     </div>
+                </header>
+                <div class="card-ministry">
+                    <div>ក្រសួងអប់រំ យុវជន និងកីឡា</div>
+                    <div>មន្ទីរអប់រំ យុវជន និងកីឡាខេត្តតាកែវ</div>
+                    <div>វិទ្យាល័យសុខអានព្រៃមេលង</div>
                 </div>
+                <div class="card-title">ប័ណ្ណសម្គាល់ខ្លួនសិស្ស</div>
+                <div class="card-year">ឆ្នាំសិក្សា ${esc(academicYear)}</div>
+                <section class="card-fields">
+                    <div class="field label">គោត្តនាម និងនាម</div>
+                    <div class="field value student-name-value">${esc(s.studentName || "")}</div>
+                    <div class="field label">ភេទ</div>
+                    <div class="field value center">${esc(s.gender || "")}</div>
+                    <div class="field label">ថ្ងៃខែឆ្នាំកំណើត</div>
+                    <div class="field value">${esc(formatDate(s.dob) || "")}</div>
+                    <div class="field label">ថ្នាក់ទី</div>
+                    <div class="field value center">${esc(s.className || "")}</div>
+                    <div class="field label">ទីកន្លែងកំណើត</div>
+                    <div class="field value wide">${esc(birthPlace)}</div>
+                    <div class="field label">លេខទំនាក់ទំនង</div>
+                    <div class="field value">${esc(s.contact || "")}</div>
+                    <div class="field label">ឪពុក/ម្តាយ</div>
+                    <div class="field value center">${esc([s.fatherName, s.motherName].filter(Boolean).join(" / ") || "")}</div>
+                </section>
+                <section class="card-lower">
+                    <div class="card-photo-box">
+                        <div class="card-id-code">${esc(visibleId)}</div>
+                        <div class="card-photo-slot">
+                            ${photoSrc ? `<img src="${esc(photoSrc)}" alt="រូបថត">` : `<span>រូបថត</span>`}
+                        </div>
+                    </div>
+                    <div class="card-signature">
+                        <div class="signature-row"><span>ថ្ងៃចេញប័ណ្ណ</span><strong>${esc(issuedDate)}</strong></div>
+                        <div class="signature-row"><span>អាសយដ្ឋាន</span><strong>${esc(currentAddress)}</strong></div>
+                        <div class="signature-lines">
+                            <span>ថ្ងៃ........ខែ........ឆ្នាំ............</span>
+                            <span>ថ្ងៃ........ខែ........ឆ្នាំ២០២.......</span>
+                        </div>
+                        <div class="principal-title">នាយកវិទ្យាល័យ</div>
+                    </div>
+                </section>
             </article>`;
         }).join("");
         printWindow("កាតសិស្ស",`
             <style>
-                @page { size: A4; margin: 8mm; }
-                body { background:#f8fafc; }
-                .cards-grid { display:grid; grid-template-columns:repeat(2, 86mm); gap:8mm 10mm; justify-content:center; }
-                .id-card { width:86mm; height:54mm; overflow:hidden; border:1.2px solid #0f766e; border-radius:4mm; background:#fff; break-inside:avoid; page-break-inside:avoid; box-shadow:0 1px 2px rgba(15,118,110,.18); }
-                .id-card-top { height:13mm; display:flex; justify-content:space-between; align-items:center; gap:3mm; padding:0 4mm; background:#0f766e; color:#fff; }
-                .school { font-size:10.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-                .type { font-size:10px; font-weight:700; padding:1mm 2mm; border:1px solid rgba(255,255,255,.6); border-radius:999px; white-space:nowrap; }
-                .id-card-body { display:grid; grid-template-columns:24mm 1fr; gap:3mm; padding:3mm 4mm; }
-                .id-photo { width:24mm; height:31mm; display:grid; place-items:center; overflow:hidden; border:1px solid #93c5fd; background:#3b86ee; color:#fff; }
-                .id-photo img { width:100%; height:100%; object-fit:cover; display:block; }
-                .id-photo-empty { font-size:9px; font-weight:700; }
-                .id-info { min-width:0; font-size:9.5px; line-height:1.45; color:#111827; }
-                .id-name { margin-bottom:1.5mm; font-size:13px; line-height:1.25; font-weight:700; color:#0f766e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-                .id-info div:not(.id-name) { display:grid; grid-template-columns:15mm 1fr; gap:2mm; }
-                .id-info span { color:#6b7280; font-weight:700; }
-                @media print { body { background:#fff; } .id-card { box-shadow:none; } }
+                @page { size: A4 landscape; margin: 4mm; }
+                body { background:#fff; color:#0f172a; }
+                .cards-grid { display:grid; grid-template-columns:repeat(3, 94mm); gap:3mm; justify-content:center; align-items:start; }
+                .certificate-student-card {
+                    position:relative;
+                    width:94mm;
+                    height:118mm;
+                    overflow:hidden;
+                    break-inside:avoid;
+                    page-break-inside:avoid;
+                    border:1.2px solid #2f72ff;
+                    background:#fff;
+                    padding:3.8mm 4mm 3mm;
+                    font-family:"Kantumruy","Khmer OS",Arial,sans-serif;
+                    letter-spacing:0;
+                }
+                .certificate-student-card * { position:relative; z-index:1; }
+                .card-watermark { position:absolute; inset:19mm 12mm auto; z-index:0; display:grid; place-items:center; opacity:.12; }
+                .card-watermark-svg { width:68mm; height:72mm; }
+                .card-heading { display:grid; grid-template-columns:23mm 1fr; min-height:17mm; align-items:start; }
+                .card-logo { display:flex; justify-content:center; align-items:flex-start; padding-top:1mm; }
+                .card-logo-svg { width:13mm; height:16mm; filter:drop-shadow(0 1px 0 rgba(255,255,255,.65)); }
+                .card-kingdom { text-align:right; color:#123344; font-size:10px; line-height:1.5; font-weight:700; }
+                .kingdom-line { width:34mm; height:1.6mm; margin:1mm 0 0 auto; border-top:1px solid #436176; border-bottom:1px solid #436176; opacity:.65; }
+                .card-ministry { margin-top:-2.5mm; color:#153847; font-size:10.2px; line-height:1.72; font-weight:700; text-shadow:0 .25px 0 #fff; }
+                .card-title { margin-top:1.4mm; text-align:center; color:#cf6f00; font-size:12px; line-height:1.25; font-weight:700; }
+                .card-year { margin-top:.4mm; text-align:center; color:#3b82f6; font-size:12px; line-height:1.2; font-weight:700; }
+                .card-fields {
+                    display:grid;
+                    grid-template-columns:25mm 31mm 10mm 15mm;
+                    column-gap:1.5mm;
+                    row-gap:1.4mm;
+                    margin-top:4.8mm;
+                    align-items:center;
+                    font-size:9.2px;
+                    line-height:1.35;
+                }
+                .field.label { color:#1f2937; white-space:nowrap; }
+                .field.value { min-width:0; color:#001eff; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+                .field.value.center { text-align:center; }
+                .field.value.wide { grid-column:span 3; }
+                .student-name-value { font-size:9.4px; }
+                .card-lower { display:grid; grid-template-columns:26mm 1fr; gap:2.5mm; margin-top:2.2mm; align-items:start; }
+                .card-photo-box { width:25mm; height:41mm; border:1.2px solid #2f72ff; background:rgba(255,255,255,.62); }
+                .card-id-code { height:7mm; display:grid; place-items:center; border-bottom:1.1px solid #2f72ff; color:#111827; font-size:9px; line-height:1; font-weight:700; white-space:nowrap; overflow:hidden; }
+                .card-photo-slot { height:34mm; display:grid; place-items:center; overflow:hidden; color:#9ca3af; font-size:9px; font-weight:700; }
+                .card-photo-slot img { width:100%; height:100%; object-fit:cover; display:block; }
+                .card-signature { min-width:0; padding-top:1mm; font-size:8.8px; line-height:1.45; color:#111827; }
+                .signature-row { display:grid; grid-template-columns:20mm 1fr; gap:1mm; margin-bottom:1.1mm; align-items:end; }
+                .signature-row strong { min-width:0; color:#001eff; border-bottom:1px dotted #374151; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+                .signature-lines { display:grid; gap:1.6mm; margin-top:2mm; color:#111827; }
+                .signature-lines span { border-bottom:1px dotted #374151; text-align:right; white-space:nowrap; }
+                .principal-title { margin-top:3.4mm; text-align:center; color:#0f3b46; font-size:11px; font-weight:700; }
+                @media print {
+                    body { background:#fff; }
+                    .cards-grid { gap:3mm; }
+                }
             </style>
-            <h1>កាតសិស្ស</h1>
-            <p class="meta">សរុប ${rows.length} នាក់ | ថ្ងៃបោះពុម្ព៖ ${esc(new Date().toLocaleDateString("km-KH"))}</p>
             <div class="cards-grid">${cards}</div>`);
     }
 
