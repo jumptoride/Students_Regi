@@ -2,6 +2,33 @@
 
 Static GitHub Pages build for the student registration app.
 
+## Firebase sync (fast & easy)
+
+Firebase Firestore is the quickest cloud option — no SQL and no Apps Script deploy, just two values to paste. The app talks to the Firestore REST API directly (no SDK download).
+
+1. Create a Firebase project at https://console.firebase.google.com.
+2. Open `Build -> Firestore Database` and click `Create database` (start in test mode for quick testing).
+3. In `Rules`, allow read/write while testing:
+
+   ```
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /{document=**} {
+         allow read, write: if true;
+       }
+     }
+   }
+   ```
+
+4. Open `Project settings` (gear icon). Copy the `Project ID` and the `Web API Key`.
+5. Open the app, click `Storage`, choose `Firebase`, paste the `Project ID` and `Web API key`, then `Save`.
+6. On the computer click `Backup` after import. On the phone click `Load` or reopen the app.
+
+Data is stored in a `students` collection, one document per student (document id = the student record id). Tighten the Firestore rules with authentication before storing sensitive production data.
+
+You can also pre-fill the connection via URL: `?storage=firebase&firebaseProjectId=YOUR_ID&firebaseApiKey=YOUR_KEY`.
+
 ## Google Sheet sync
 
 Use `google-sheet-backend.gs` as the Apps Script backend:

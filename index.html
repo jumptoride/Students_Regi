@@ -2419,14 +2419,30 @@
             </div>
             <h2 id="sheet-title" class="modal-title">ភ្ជាប់ Storage</h2>
             <p class="modal-desc">
-                ជ្រើសរើស Supabase ឬ Google Sheet ដើម្បីឱ្យ computer និង phone ប្រើទិន្នន័យតែមួយ។
+                ជ្រើសរើស Firebase, Supabase ឬ Google Sheet ដើម្បីឱ្យ computer និង phone ប្រើទិន្នន័យតែមួយ។
             </p>
             <div class="field" style="margin-top:16px">
                 <label for="storage-provider-select">Storage provider</label>
                 <select id="storage-provider-select" style="margin-top:4px">
+                    <option value="firebase">Firebase (លឿន ងាយស្រួល)</option>
                     <option value="supabase">Supabase</option>
                     <option value="google-sheet">Google Sheet</option>
                 </select>
+            </div>
+            <div id="firebase-settings-fields" class="storage-fields is-hidden">
+                <div class="field">
+                    <label for="firebase-project-id-input">Firebase Project ID</label>
+                    <input id="firebase-project-id-input" type="text"
+                           placeholder="my-project-id" autocomplete="off">
+                </div>
+                <div class="field">
+                    <label for="firebase-api-key-input">Firebase Web API key</label>
+                    <input id="firebase-api-key-input" type="password"
+                           placeholder="AIzaSy...">
+                </div>
+                <p class="modal-desc" style="font-size:.78rem;margin-top:2px">
+                    បើក Firestore Database រួចកំណត់ Rules អនុញ្ញាត read/write សម្រាប់តេស្ត។ Project ID និង API key នៅ Project settings។
+                </p>
             </div>
             <div id="supabase-settings-fields" class="storage-fields">
                 <div class="field">
@@ -2541,6 +2557,7 @@
     const LOCAL_HISTORY_KEY  = "studentRegistrationOfflineHistory";
     const SUPABASE_PROVIDER = "supabase";
     const GOOGLE_SHEET_PROVIDER = "google-sheet";
+    const FIREBASE_PROVIDER = "firebase";
     const CLOUD_PROVIDER_STORAGE_KEY = "studentRegistrationCloudProvider";
     const DEFAULT_SUPABASE_URL = "https://ckfysmueguiyunjdffqn.supabase.co";
     const DEFAULT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrZnlzbXVlZ3VpeXVuamRmZnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NTI0MTIsImV4cCI6MjA5NTAyODQxMn0.Ud7El5jqk6GyTqIe24wk4AwQscIFeLiU2PgjWID7gBE";
@@ -2551,6 +2568,13 @@
     const BACKUP_TIME_STORAGE_KEY    = "studentRegistrationLastBackupAt";
     const STUDENT_CODE_PREFIX        = "STU";
     const SUPABASE_READ_PAGE_SIZE    = 1000;
+    const DEFAULT_FIREBASE_PROJECT_ID = "";
+    const DEFAULT_FIREBASE_API_KEY    = "";
+    const FIREBASE_PROJECT_ID_STORAGE_KEY = "studentRegistrationFirebaseProjectId";
+    const FIREBASE_API_KEY_STORAGE_KEY    = "studentRegistrationFirebaseApiKey";
+    const FIRESTORE_COLLECTION        = "students";
+    const FIRESTORE_READ_PAGE_SIZE    = 300;
+    const FIRESTORE_COMMIT_CHUNK      = 400;
 
     const SUPABASE_FIELD_MAP = {
         id: "id",
@@ -2804,8 +2828,11 @@
         storageProviderSelect: document.getElementById("storage-provider-select"),
         supabaseSettingsFields: document.getElementById("supabase-settings-fields"),
         googleSheetSettingsFields: document.getElementById("google-sheet-settings-fields"),
+        firebaseSettingsFields: document.getElementById("firebase-settings-fields"),
         supabaseUrlInput: document.getElementById("supabase-url-input"),
         supabaseKeyInput: document.getElementById("supabase-key-input"),
+        firebaseProjectIdInput: document.getElementById("firebase-project-id-input"),
+        firebaseApiKeyInput: document.getElementById("firebase-api-key-input"),
         sheetUrlInput: document.getElementById("sheet-url-input"),
         clearSheetUrlBtn: document.getElementById("clear-sheet-url-btn"),
         testStorageBtn: document.getElementById("test-storage-btn"),
@@ -3081,22 +3108,33 @@
     function hasSupabaseConfig() { return Boolean(getSupabaseUrl() && getSupabaseAnonKey()); }
     function getGoogleScriptUrl() { return localStorage.getItem(GOOGLE_SCRIPT_STORAGE_KEY) || DEFAULT_GOOGLE_SCRIPT_URL; }
     function hasGoogleScriptUrl() { return Boolean(getGoogleScriptUrl()); }
+    function getFirebaseProjectId() { return String(localStorage.getItem(FIREBASE_PROJECT_ID_STORAGE_KEY) || DEFAULT_FIREBASE_PROJECT_ID).trim(); }
+    function getFirebaseApiKey() { return String(localStorage.getItem(FIREBASE_API_KEY_STORAGE_KEY) || DEFAULT_FIREBASE_API_KEY).trim(); }
+    function hasFirebaseConfig() { return Boolean(getFirebaseProjectId() && getFirebaseApiKey()); }
 
     function getCloudProvider() {
         const saved = localStorage.getItem(CLOUD_PROVIDER_STORAGE_KEY);
+        if (saved === FIREBASE_PROVIDER && hasFirebaseConfig()) return FIREBASE_PROVIDER;
         if (saved === SUPABASE_PROVIDER && hasSupabaseConfig()) return SUPABASE_PROVIDER;
         if (saved === GOOGLE_SHEET_PROVIDER && hasGoogleScriptUrl()) return GOOGLE_SHEET_PROVIDER;
+        if (hasFirebaseConfig()) return FIREBASE_PROVIDER;
         if (hasSupabaseConfig()) return SUPABASE_PROVIDER;
         if (hasGoogleScriptUrl()) return GOOGLE_SHEET_PROVIDER;
         return SUPABASE_PROVIDER;
     }
 
     function currentStorageName() {
-        return getCloudProvider() === SUPABASE_PROVIDER ? "Supabase" : "Google Sheet";
+        const provider = getCloudProvider();
+        if (provider === FIREBASE_PROVIDER) return "Firebase";
+        if (provider === SUPABASE_PROVIDER) return "Supabase";
+        return "Google Sheet";
     }
 
     function hasCloudStorageConfig() {
-        return getCloudProvider() === SUPABASE_PROVIDER ? hasSupabaseConfig() : hasGoogleScriptUrl();
+        const provider = getCloudProvider();
+        if (provider === FIREBASE_PROVIDER) return hasFirebaseConfig();
+        if (provider === SUPABASE_PROVIDER) return hasSupabaseConfig();
+        return hasGoogleScriptUrl();
     }
 
     function readableCloudError(err) {
@@ -3132,9 +3170,11 @@
             const sheetUrl = params.get("sheet") || params.get("sheetUrl");
             const supabaseUrl = params.get("supabaseUrl") || params.get("sbUrl");
             const supabaseKey = params.get("supabaseKey") || params.get("sbKey");
+            const firebaseProjectId = params.get("firebaseProjectId") || params.get("fbProject");
+            const firebaseApiKey = params.get("firebaseApiKey") || params.get("fbKey");
             let changed = false;
 
-            if (provider && [SUPABASE_PROVIDER, GOOGLE_SHEET_PROVIDER].includes(provider)) {
+            if (provider && [FIREBASE_PROVIDER, SUPABASE_PROVIDER, GOOGLE_SHEET_PROVIDER].includes(provider)) {
                 localStorage.setItem(CLOUD_PROVIDER_STORAGE_KEY, provider);
                 params.delete("storage"); params.delete("provider");
                 changed = true;
@@ -3157,6 +3197,18 @@
                 params.delete("supabaseKey"); params.delete("sbKey");
                 changed = true;
             }
+            if (firebaseProjectId) {
+                localStorage.setItem(FIREBASE_PROJECT_ID_STORAGE_KEY, firebaseProjectId.trim());
+                localStorage.setItem(CLOUD_PROVIDER_STORAGE_KEY, FIREBASE_PROVIDER);
+                params.delete("firebaseProjectId"); params.delete("fbProject");
+                changed = true;
+            }
+            if (firebaseApiKey) {
+                localStorage.setItem(FIREBASE_API_KEY_STORAGE_KEY, firebaseApiKey.trim());
+                localStorage.setItem(CLOUD_PROVIDER_STORAGE_KEY, FIREBASE_PROVIDER);
+                params.delete("firebaseApiKey"); params.delete("fbKey");
+                changed = true;
+            }
             if (changed) {
                 const cleanQuery = params.toString();
                 const cleanUrl = `${window.location.pathname}${cleanQuery ? `?${cleanQuery}` : ""}${window.location.hash}`;
@@ -3169,6 +3221,7 @@
 
     function updateStorageFieldsVisibility() {
         const provider = els.storageProviderSelect?.value || getCloudProvider();
+        els.firebaseSettingsFields?.classList.toggle("is-hidden", provider !== FIREBASE_PROVIDER);
         els.supabaseSettingsFields?.classList.toggle("is-hidden", provider !== SUPABASE_PROVIDER);
         els.googleSheetSettingsFields?.classList.toggle("is-hidden", provider !== GOOGLE_SHEET_PROVIDER);
     }
@@ -3191,17 +3244,24 @@
         els.supabaseUrlInput.value = getSupabaseUrl();
         els.supabaseKeyInput.value = getSupabaseAnonKey();
         els.sheetUrlInput.value = getGoogleScriptUrl();
+        els.firebaseProjectIdInput.value = getFirebaseProjectId();
+        els.firebaseApiKeyInput.value = getFirebaseApiKey();
         updateStorageFieldsVisibility();
         els.sheetModal.classList.add("is-open");
         setTimeout(() => {
-            if (els.storageProviderSelect.value === SUPABASE_PROVIDER) els.supabaseUrlInput.focus();
+            const p = els.storageProviderSelect.value;
+            if (p === FIREBASE_PROVIDER) els.firebaseProjectIdInput.focus();
+            else if (p === SUPABASE_PROVIDER) els.supabaseUrlInput.focus();
             else els.sheetUrlInput.focus();
         }, 0);
     }
     function closeSheetModal() { els.sheetModal.classList.remove("is-open"); }
 
     function clearCloudSettings(provider=getCloudProvider()) {
-        if (provider === SUPABASE_PROVIDER) {
+        if (provider === FIREBASE_PROVIDER) {
+            localStorage.removeItem(FIREBASE_PROJECT_ID_STORAGE_KEY);
+            localStorage.removeItem(FIREBASE_API_KEY_STORAGE_KEY);
+        } else if (provider === SUPABASE_PROVIDER) {
             localStorage.removeItem(SUPABASE_URL_STORAGE_KEY);
             localStorage.removeItem(SUPABASE_ANON_KEY_STORAGE_KEY);
         } else {
@@ -3215,6 +3275,25 @@
     function saveSheetUrl() {
         const provider = els.storageProviderSelect.value;
         localStorage.setItem(CLOUD_PROVIDER_STORAGE_KEY, provider);
+        if (provider === FIREBASE_PROVIDER) {
+            const projectId = els.firebaseProjectIdInput.value.trim();
+            const apiKey = els.firebaseApiKeyInput.value.trim();
+            if (!projectId) {
+                showToast("សូមបញ្ចូល Firebase Project ID", "warning");
+                return;
+            }
+            if (!apiKey) {
+                showToast("សូមបញ្ចូល Firebase Web API key", "warning");
+                return;
+            }
+            localStorage.setItem(FIREBASE_PROJECT_ID_STORAGE_KEY, projectId);
+            localStorage.setItem(FIREBASE_API_KEY_STORAGE_KEY, apiKey);
+            closeSheetModal();
+            setCloudControlsLoading(false);
+            showToast("បានរក្សាទុក Firebase Storage");
+            loadStudentsFromCloudStorage({ silent:false, keepLocalWhenCloudEmpty:true });
+            return;
+        }
         if (provider === SUPABASE_PROVIDER) {
             const url = normalizeSupabaseUrl(els.supabaseUrlInput.value);
             const key = els.supabaseKeyInput.value.trim();
@@ -3252,6 +3331,22 @@
         els.testStorageBtn.innerHTML = loading
             ? '<span class="spinner"></span><span>កំពុងតេស្ត...</span>'
             : '<ion-icon name="pulse-outline" aria-hidden="true"></ion-icon><span>តេស្តភ្ជាប់</span>';
+    }
+
+    async function testFirebaseDraftConnection(projectId, apiKey) {
+        if (!projectId || !apiKey) return { ok:false, message:"សូមបញ្ចូល Project ID និង API key" };
+        const url = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/databases/(default)/documents/${FIRESTORE_COLLECTION}?pageSize=1&key=${encodeURIComponent(apiKey)}`;
+        const response = await fetch(url, { method:"GET", mode:"cors", cache:"no-cache" });
+        if (response.ok) return { ok:true, message:"Firebase ភ្ជាប់បានត្រឹមត្រូវ" };
+        const text = await response.text();
+        let detail = text;
+        try { detail = JSON.parse(text)?.error?.message || text; } catch {}
+        if (response.status === 403) {
+            if (/has not been used|disabled|SERVICE_DISABLED/i.test(detail)) return { ok:false, message:"សូមបើក Cloud Firestore API ក្នុង Firebase project" };
+            return { ok:false, message:"Firestore Rules មិនអនុញ្ញាត ឬ API key ខុស" };
+        }
+        if (response.status === 400 || response.status === 404) return { ok:false, message:"Project ID ឬ API key មិនត្រឹមត្រូវ" };
+        return { ok:false, message:detail || `Firebase error ${response.status}` };
     }
 
     async function testSupabaseDraftConnection(url, key) {
@@ -3305,11 +3400,17 @@
         setStorageTestLoading(true);
         lastCloudError = "";
         try {
-            const result = provider === SUPABASE_PROVIDER
-                ? await testSupabaseDraftConnection(normalizeSupabaseUrl(els.supabaseUrlInput.value), els.supabaseKeyInput.value.trim())
-                : await testGoogleSheetDraftConnection(els.sheetUrlInput.value.trim());
+            let result;
+            if (provider === FIREBASE_PROVIDER) {
+                result = await testFirebaseDraftConnection(els.firebaseProjectIdInput.value.trim(), els.firebaseApiKeyInput.value.trim());
+            } else if (provider === SUPABASE_PROVIDER) {
+                result = await testSupabaseDraftConnection(normalizeSupabaseUrl(els.supabaseUrlInput.value), els.supabaseKeyInput.value.trim());
+            } else {
+                result = await testGoogleSheetDraftConnection(els.sheetUrlInput.value.trim());
+            }
+            const providerName = provider === FIREBASE_PROVIDER ? "Firebase" : (provider === SUPABASE_PROVIDER ? "Supabase" : "Google Sheet");
             showToast(result.message, result.ok ? "success" : "warning");
-            setStatus(result.ok ? (provider === SUPABASE_PROVIDER ? "Supabase" : "Google Sheet") : "Storage មិនទាន់រួច", result.ok ? "connected" : "error");
+            setStatus(result.ok ? providerName : "Storage មិនទាន់រួច", result.ok ? "connected" : "error");
         } catch(e) {
             console.error("Storage test error:", e);
             lastCloudError = readableCloudError(e);
@@ -3469,6 +3570,173 @@
         return true;
     }
 
+    // ----- Firebase (Firestore REST API) -----
+    async function firestoreFetch(path, options={}) {
+        const projectId = getFirebaseProjectId();
+        const apiKey = getFirebaseApiKey();
+        if (!projectId || !apiKey) throw new Error("Missing Firebase config");
+        const base = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/databases/(default)/documents`;
+        const sep = path.includes("?") ? "&" : "?";
+        const url = `${base}${path}${sep}key=${encodeURIComponent(apiKey)}`;
+        const response = await fetch(url, {
+            method: options.method || "GET",
+            mode: "cors",
+            cache: "no-cache",
+            headers: { "Content-Type":"application/json", ...(options.headers||{}) },
+            body: options.body
+        });
+        const text = await response.text();
+        if (!response.ok) {
+            let msg = text;
+            try { msg = JSON.parse(text)?.error?.message || text; } catch {}
+            throw new Error(msg || `Firebase HTTP ${response.status}`);
+        }
+        return text ? JSON.parse(text) : null;
+    }
+
+    function firestoreDocName(docId) {
+        return `projects/${getFirebaseProjectId()}/databases/(default)/documents/${FIRESTORE_COLLECTION}/${docId}`;
+    }
+
+    function fromFirestoreValue(v={}) {
+        if (v.stringValue !== undefined) return v.stringValue;
+        if (v.integerValue !== undefined) return String(v.integerValue);
+        if (v.doubleValue !== undefined) return String(v.doubleValue);
+        if (v.booleanValue !== undefined) return v.booleanValue ? "true" : "";
+        if (v.timestampValue !== undefined) return v.timestampValue;
+        return "";
+    }
+
+    function firestoreResolveDocId(student={}, studentId="") {
+        return String(student.id || student.recordId || studentId || student.studentCode || student.studentId || `stu-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    }
+
+    function studentToFirestoreRow(student={}, studentId="") {
+        const id = firestoreResolveDocId(student, studentId);
+        const normalized = normalizeCloudStudent({ ...student, id, studentCode: student.studentCode || student.studentId || "" });
+        const fields = {};
+        Object.entries(SUPABASE_FIELD_MAP).forEach(([field, column]) => {
+            fields[column] = { stringValue: String(normalized[field] ?? "") };
+        });
+        fields.id = { stringValue: id };
+        fields.student_code = { stringValue: normalized.studentCode || "" };
+        fields.created_at = { stringValue: normalized.createdAt || new Date().toISOString() };
+        fields.updated_at = { stringValue: new Date().toISOString() };
+        return { id, fields };
+    }
+
+    function firestoreDocToStudent(doc={}, idx=0) {
+        const f = doc.fields || {};
+        const student = {};
+        Object.entries(SUPABASE_FIELD_MAP).forEach(([field, column]) => {
+            student[field] = fromFirestoreValue(f[column] || {});
+        });
+        if (!student.id) student.id = String(doc.name || "").split("/").pop() || "";
+        return normalizeCloudStudent(student, idx);
+    }
+
+    async function readFirestoreStudents() {
+        const docs = [];
+        let pageToken = "";
+        do {
+            const path = `/${FIRESTORE_COLLECTION}?pageSize=${FIRESTORE_READ_PAGE_SIZE}${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ""}`;
+            const data = await firestoreFetch(path);
+            if (data && Array.isArray(data.documents)) docs.push(...data.documents);
+            pageToken = (data && data.nextPageToken) ? data.nextPageToken : "";
+        } while (pageToken);
+        const students = docs.map(firestoreDocToStudent).filter(s => s.studentName);
+        students.sort((a, b) =>
+            String(a.className || "").localeCompare(String(b.className || "")) ||
+            String(a.studentName || "").localeCompare(String(b.studentName || "")));
+        return students;
+    }
+
+    async function listFirestoreDocIds() {
+        const ids = [];
+        let pageToken = "";
+        do {
+            const path = `/${FIRESTORE_COLLECTION}?pageSize=${FIRESTORE_READ_PAGE_SIZE}&mask.fieldPaths=id${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ""}`;
+            const data = await firestoreFetch(path);
+            if (data && Array.isArray(data.documents)) {
+                data.documents.forEach(doc => {
+                    const docId = String(doc.name || "").split("/").pop();
+                    if (docId) ids.push(docId);
+                });
+            }
+            pageToken = (data && data.nextPageToken) ? data.nextPageToken : "";
+        } while (pageToken);
+        return ids;
+    }
+
+    async function firestoreCommit(writes=[]) {
+        for (let i = 0; i < writes.length; i += FIRESTORE_COMMIT_CHUNK) {
+            const chunk = writes.slice(i, i + FIRESTORE_COMMIT_CHUNK);
+            if (!chunk.length) continue;
+            await firestoreFetch(":commit", { method:"POST", body: JSON.stringify({ writes: chunk }) });
+        }
+    }
+
+    async function syncFirebaseStorage(action, student={}, studentId="", students=null) {
+        if (!hasFirebaseConfig()) return false;
+        if (action === "backup") {
+            const list = Array.isArray(students) ? students : [];
+            const existingIds = await listFirestoreDocIds();
+            if (!list.length) {
+                await firestoreCommit(existingIds.map(id => ({ delete: firestoreDocName(id) })));
+            } else {
+                const rows = list.map(s => studentToFirestoreRow(s, studentDisplayId(s, s.id)));
+                const currentIds = new Set(rows.map(r => r.id));
+                const writes = rows.map(r => ({ update: { name: firestoreDocName(r.id), fields: r.fields } }));
+                const staleDeletes = existingIds.filter(id => !currentIds.has(id)).map(id => ({ delete: firestoreDocName(id) }));
+                await firestoreCommit([...writes, ...staleDeletes]);
+            }
+        } else if (action === "upsert") {
+            const row = studentToFirestoreRow(student, studentId);
+            await firestoreCommit([{ update: { name: firestoreDocName(row.id), fields: row.fields } }]);
+        } else if (action === "delete") {
+            const docId = firestoreResolveDocId(student, studentId);
+            if (docId) await firestoreCommit([{ delete: firestoreDocName(docId) }]);
+        }
+        if (["upsert","delete","backup"].includes(action)) {
+            localStorage.setItem(BACKUP_TIME_STORAGE_KEY, new Date().toISOString());
+        }
+        return true;
+    }
+
+    async function loadStudentsFromFirebase({ silent=false, keepLocalWhenCloudEmpty=true }={}) {
+        if (!hasFirebaseConfig()) {
+            setStatus("ឡូកាល់ (Offline)", "connected");
+            setCloudControlsLoading(false);
+            if (!silent) showToast("សូមភ្ជាប់ Firebase Project ID និង API key ជាមុន","warning");
+            return false;
+        }
+        setCloudControlsLoading(true);
+        setStatus("កំពុង Load ពី Firebase...", "");
+        try {
+            const cloudStudents = await readFirestoreStudents();
+            if (!cloudStudents.length && keepLocalWhenCloudEmpty && allStudents.length) {
+                setStatus("Firebase ទទេ - រក្សាទុក Local", "connected");
+                if (!silent) showToast("Firebase ទទេ។ ទិន្នន័យក្នុង browser ត្រូវបានរក្សាទុក","warning");
+                return false;
+            }
+            allStudents = cloudStudents;
+            saveToLocalStorage(allStudents);
+            localStorage.setItem(BACKUP_TIME_STORAGE_KEY, new Date().toISOString());
+            await refreshStudents({ reset:true, source:"memory" });
+            setStatus("Firebase", "connected");
+            if (!silent) showToast(`Load ពី Firebase ${allStudents.length} នាក់`);
+            return true;
+        } catch(e) {
+            console.error("Firebase load error:", e);
+            lastCloudError = readableCloudError(e);
+            setStatus("Firebase មិនបានភ្ជាប់", "error");
+            if (!silent) showToast(`Load ពី Firebase មិនបាន${lastCloudError ? ": " + lastCloudError.slice(0, 90) : ""}`,"error");
+            return false;
+        } finally {
+            setCloudControlsLoading(false);
+        }
+    }
+
     async function syncGoogleSheet(action, student={}, studentId="", students=null) {
         const url = getGoogleScriptUrl();
         if (!url) return false;
@@ -3487,7 +3755,11 @@
         lastCloudError = "";
         cloudSyncWarning = "";
         try {
-            if (getCloudProvider() === SUPABASE_PROVIDER) {
+            const provider = getCloudProvider();
+            if (provider === FIREBASE_PROVIDER) {
+                return await syncFirebaseStorage(action, student, studentId, students);
+            }
+            if (provider === SUPABASE_PROVIDER) {
                 return await syncSupabaseStorage(action, student, studentId, students);
             }
             return await syncGoogleSheet(action, student, studentId, students);
@@ -3634,9 +3906,10 @@
     }
 
     function loadStudentsFromCloudStorage(options={}) {
-        return getCloudProvider() === SUPABASE_PROVIDER
-            ? loadStudentsFromSupabase(options)
-            : loadStudentsFromGoogleSheet(options);
+        const provider = getCloudProvider();
+        if (provider === FIREBASE_PROVIDER) return loadStudentsFromFirebase(options);
+        if (provider === SUPABASE_PROVIDER) return loadStudentsFromSupabase(options);
+        return loadStudentsFromGoogleSheet(options);
     }
 
     // ===================== ADDRESS CASCADE =====================
@@ -5328,12 +5601,16 @@
             els.sheetUrlInput.value="";
             els.supabaseUrlInput.value="";
             els.supabaseKeyInput.value="";
+            els.firebaseProjectIdInput.value="";
+            els.firebaseApiKeyInput.value="";
             closeSheetModal();showToast("បានសម្អាត Storage");
         });
         els.sheetModal.addEventListener("click",e=>{if(e.target===els.sheetModal)closeSheetModal();});
         els.sheetUrlInput.addEventListener("keydown",e=>{if(e.key==="Enter")saveSheetUrl();});
         els.supabaseUrlInput.addEventListener("keydown",e=>{if(e.key==="Enter")saveSheetUrl();});
         els.supabaseKeyInput.addEventListener("keydown",e=>{if(e.key==="Enter")saveSheetUrl();});
+        els.firebaseProjectIdInput.addEventListener("keydown",e=>{if(e.key==="Enter")saveSheetUrl();});
+        els.firebaseApiKeyInput.addEventListener("keydown",e=>{if(e.key==="Enter")saveSheetUrl();});
 
         // Delete modal
         els.cancelDeleteBtn.addEventListener("click",closeDeleteModal);
